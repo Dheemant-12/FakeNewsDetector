@@ -3,15 +3,14 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 
-from loader import load_dataset
-from preprocessing import clean_text
+from utils.loader import load_dataset
+from utils.preprocessing import clean_text
 
-# Download NLTK resources (only required the first time)
+# Download NLTK resources
 nltk.download("punkt")
 nltk.download("punkt_tab")
 nltk.download("stopwords")
 
-# Load English stopwords
 STOP_WORDS = set(stopwords.words("english"))
 
 
@@ -37,21 +36,18 @@ if __name__ == "__main__":
     print("Loading Dataset...")
     print("=" * 60)
 
-    # Load dataset using loader.py
     df = load_dataset()
 
     print(f"Total Articles: {len(df)}")
 
     print("\nCleaning text...")
 
-    # Apply Day 3 preprocessing
     df["clean_text"] = df["text"].apply(clean_text)
 
     print("Cleaning completed.")
 
     print("\nTokenizing and removing stopwords...")
 
-    # Apply Day 4 preprocessing
     df["processed_text"] = df["clean_text"].apply(
         tokenize_and_remove_stopwords
     )
@@ -66,21 +62,7 @@ if __name__ == "__main__":
     print("\nDataset Shape:")
     print(df.shape)
 
-    print("\nMissing Values in processed_text:")
+    print("\nMissing Values:")
     print(df["processed_text"].isnull().sum())
-
-    print("\nExample Comparison")
-    print("-" * 60)
-
-    sample = df.iloc[0]
-
-    print("\nOriginal Text:\n")
-    print(sample["text"][:400])
-
-    print("\nClean Text:\n")
-    print(sample["clean_text"][:400])
-
-    print("\nProcessed Text:\n")
-    print(sample["processed_text"][:400])
 
     print("\nPreprocessing pipeline completed successfully.")

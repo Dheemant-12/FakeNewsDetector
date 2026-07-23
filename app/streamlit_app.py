@@ -61,19 +61,57 @@ if st.button("Predict"):
 
     if article.strip() == "":
         st.warning("Please enter some text.")
+
     else:
+
+        # -------------------------------
+        # Preprocess
+        # -------------------------------
 
         processed = prepare_text(article)
 
+        # -------------------------------
+        # Vectorize
+        # -------------------------------
+
         features = vectorizer.transform([processed])
+
+        # -------------------------------
+        # Prediction
+        # -------------------------------
 
         prediction = model.predict(features)[0]
 
-        confidence = model.predict_proba(features).max() * 100
+        probabilities = model.predict_proba(features)[0]
+
+        fake_probability = probabilities[0] * 100
+        real_probability = probabilities[1] * 100
+
+        # -------------------------------
+        # Display Result
+        # -------------------------------
 
         if prediction == 0:
             st.error("🚨 Prediction: FAKE NEWS")
         else:
             st.success("✅ Prediction: REAL NEWS")
 
-        st.info(f"Confidence: {confidence:.2f}%")
+        st.subheader("Prediction Probabilities")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Fake", f"{fake_probability:.2f}%")
+
+        with col2:
+            st.metric("Real", f"{real_probability:.2f}%")
+
+        st.divider()
+
+        st.subheader("Debug Information")
+
+        st.write("**Processed Text:**")
+        st.code(processed)
+
+        st.write(f"**Feature Shape:** {features.shape}")
+        st.write(f"**Non-zero Features:** {features.nnz}")

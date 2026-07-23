@@ -39,13 +39,38 @@ while True:
         print("\nGoodbye!")
         break
 
+    # -------------------------------
+    # Preprocess
+    # -------------------------------
+
     processed = prepare_text(article)
+
+    print("\nProcessed Text:")
+    print(processed)
+
+    # -------------------------------
+    # Vectorize
+    # -------------------------------
 
     features = vectorizer.transform([processed])
 
+    print(f"\nFeature Shape      : {features.shape}")
+    print(f"Non-zero Features  : {features.nnz}")
+
+    # -------------------------------
+    # Prediction
+    # -------------------------------
+
     prediction = model.predict(features)[0]
 
-    confidence = model.predict_proba(features).max() * 100
+    probabilities = model.predict_proba(features)[0]
+
+    fake_probability = probabilities[0] * 100
+    real_probability = probabilities[1] * 100
+
+    # -------------------------------
+    # Output
+    # -------------------------------
 
     print("\n" + "=" * 60)
 
@@ -54,6 +79,7 @@ while True:
     else:
         print("Prediction : REAL NEWS")
 
-    print(f"Confidence : {confidence:.2f}%")
+    print(f"Fake Probability : {fake_probability:.2f}%")
+    print(f"Real Probability : {real_probability:.2f}%")
 
     print("=" * 60)

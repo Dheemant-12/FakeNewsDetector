@@ -1,0 +1,4 @@
+text,processed_text,prediction,fake_probability,real_probability
+NASA announced a new satellite mission to monitor climate change.,nasa announced new satellite mission monitor climate change,FAKE NEWS,95.36,4.64
+The government has secretly discovered aliens living under the ocean.,government secretly discovered aliens living ocean,FAKE NEWS,96.01,3.99
+Scientists have developed a new vaccine for seasonal influenza.,scientists developed new vaccine seasonal influenza,FAKE NEWS,88.21,11.79

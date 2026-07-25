@@ -2,6 +2,7 @@ import os
 import sys
 import joblib
 import streamlit as st
+import pandas as pd
 
 # -------------------------------------------------
 # Add Project Root
@@ -17,6 +18,9 @@ from utils.tokenizer import tokenize_and_remove_stopwords
 
 
 def prepare_text(text):
+    """
+    Complete preprocessing pipeline.
+    """
     text = clean_text(text)
     text = tokenize_and_remove_stopwords(text)
     return text
@@ -36,7 +40,7 @@ def load_models():
 model, vectorizer = load_models()
 
 # -------------------------------------------------
-# UI
+# Streamlit UI
 # -------------------------------------------------
 
 st.set_page_config(
@@ -64,21 +68,21 @@ if st.button("Predict"):
 
     else:
 
-        # -------------------------------
+        # ------------------------------------
         # Preprocess
-        # -------------------------------
+        # ------------------------------------
 
         processed = prepare_text(article)
 
-        # -------------------------------
+        # ------------------------------------
         # Vectorize
-        # -------------------------------
+        # ------------------------------------
 
         features = vectorizer.transform([processed])
 
-        # -------------------------------
+        # ------------------------------------
         # Prediction
-        # -------------------------------
+        # ------------------------------------
 
         prediction = model.predict(features)[0]
 
@@ -87,14 +91,18 @@ if st.button("Predict"):
         fake_probability = probabilities[0] * 100
         real_probability = probabilities[1] * 100
 
-        # -------------------------------
-        # Display Result
-        # -------------------------------
+        # ------------------------------------
+        # Display Prediction
+        # ------------------------------------
 
         if prediction == 0:
             st.error("🚨 Prediction: FAKE NEWS")
         else:
             st.success("✅ Prediction: REAL NEWS")
+
+        # ------------------------------------
+        # Probability Metrics
+        # ------------------------------------
 
         st.subheader("Prediction Probabilities")
 
@@ -106,12 +114,40 @@ if st.button("Predict"):
         with col2:
             st.metric("Real", f"{real_probability:.2f}%")
 
-        st.divider()
+        # ------------------------------------
+        # Download Report
+        # ------------------------------------
 
-        st.subheader("Debug Information")
+        report = pd.DataFrame({
+            "Article": [article],
+            "Prediction": [
+                "FAKE NEWS" if prediction == 0 else "REAL NEWS"
+            ],
+            "Fake Probability (%)": [
+                round(fake_probability, 2)
+            ],
+            "Real Probability (%)": [
+                round(real_probability, 2)
+            ]
+        })
 
-        st.write("**Processed Text:**")
-        st.code(processed)
+        csv = report.to_csv(index=False).encode("utf-8")
 
-        st.write(f"**Feature Shape:** {features.shape}")
-        st.write(f"**Non-zero Features:** {features.nnz}")
+        st.download_button(
+            label="📥 Download Prediction Report",
+            data=csv,
+            file_name="prediction_report.csv",
+            mime="text/csv"
+        )
+
+        # ------------------------------------
+        # Optional Debug Section
+        # ------------------------------------
+
+        with st.expander("🛠 Debug Information"):
+
+            st.write("**Processed Text**")
+            st.code(processed)
+
+            st.write(f"**Feature Shape:** {features.shape}")
+            st.write(f"**Non-zero Features:** {features.nnz}")

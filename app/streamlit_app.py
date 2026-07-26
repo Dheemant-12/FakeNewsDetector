@@ -40,6 +40,13 @@ def load_models():
 model, vectorizer = load_models()
 
 # -------------------------------------------------
+# Session State
+# -------------------------------------------------
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# -------------------------------------------------
 # Streamlit UI
 # -------------------------------------------------
 
@@ -141,6 +148,17 @@ if st.button("Predict"):
         )
 
         # ------------------------------------
+        # Save Prediction History
+        # ------------------------------------
+
+        st.session_state.history.append({
+            "Prediction": "FAKE NEWS" if prediction == 0 else "REAL NEWS",
+            "Fake Probability (%)": round(fake_probability, 2),
+            "Real Probability (%)": round(real_probability, 2),
+            "Article": article[:100] + "..." if len(article) > 100 else article
+        })
+
+        # ------------------------------------
         # Optional Debug Section
         # ------------------------------------
 
@@ -151,3 +169,26 @@ if st.button("Predict"):
 
             st.write(f"**Feature Shape:** {features.shape}")
             st.write(f"**Non-zero Features:** {features.nnz}")
+
+# -------------------------------------------------
+# Prediction History
+# -------------------------------------------------
+
+if st.session_state.history:
+
+    st.divider()
+    st.subheader("📜 Prediction History")
+
+    history_df = pd.DataFrame(st.session_state.history)
+
+    st.dataframe(
+        history_df,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    if st.button("🗑 Clear History"):
+
+        st.session_state.history = []
+
+        st.rerun()

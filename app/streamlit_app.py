@@ -111,16 +111,31 @@ if st.button("Predict"):
         # Probability Metrics
         # ------------------------------------
 
-        st.subheader("Prediction Probabilities")
+        st.subheader("Prediction Confidence")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Fake", f"{fake_probability:.2f}%")
+
+            st.metric(
+                "Fake",
+                f"{fake_probability:.2f}%"
+            )
+
+            st.progress(min(int(fake_probability), 100))
 
         with col2:
-            st.metric("Real", f"{real_probability:.2f}%")
 
+            st.metric(
+                "Real",
+                f"{real_probability:.2f}%"
+            )
+
+            st.progress(min(int(real_probability), 100))
+        st.info(
+            "The model assigns probabilities to both classes. "
+            "The class with the higher probability becomes the final prediction."
+        )
         # ------------------------------------
         # Download Report
         # ------------------------------------

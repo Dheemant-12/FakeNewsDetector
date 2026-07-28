@@ -3,6 +3,7 @@ import sys
 import joblib
 import streamlit as st
 import pandas as pd
+import re
 
 # -------------------------------------------------
 # Add Project Root
@@ -24,6 +25,26 @@ def prepare_text(text):
     text = clean_text(text)
     text = tokenize_and_remove_stopwords(text)
     return text
+def validate_input(text):
+    """
+    Validate user input before prediction.
+    Returns (is_valid, message)
+    """
+
+    text = text.strip()
+
+    if not text:
+        return False, "Please enter a news article."
+
+    # Check for alphabetic characters first
+    if not re.search(r"[A-Za-z]", text):
+        return False, "Input should contain alphabetic text."
+
+    # Then check article length
+    if len(text.split()) < 8:
+        return False, "Please enter a longer news article (at least 8 words)."
+
+    return True, ""
 
 
 # -------------------------------------------------
@@ -70,42 +91,120 @@ article = st.text_area(
 
 if st.button("Predict"):
 
-    if article.strip() == "":
-        st.warning("Please enter some text.")
+    is_valid, message = validate_input(article)
+
+    if not is_valid:
+        st.warning(message)
 
     else:
 
-        # ------------------------------------
-        # Preprocess
-        # ------------------------------------
+        try:
 
-        processed = prepare_text(article)
+            # ------------------------------------
+            # Preprocess
+            # ------------------------------------
 
-        # ------------------------------------
-        # Vectorize
-        # ------------------------------------
+            processed = prepare_text(article)
 
-        features = vectorizer.transform([processed])
+            # ------------------------------------
+            # Vectorize
+            # ------------------------------------
 
-        # ------------------------------------
-        # Prediction
-        # ------------------------------------
+            features = vectorizer.transform([processed])
 
-        prediction = model.predict(features)[0]
+            # ------------------------------------
+            # Prediction
+            # ------------------------------------
 
-        probabilities = model.predict_proba(features)[0]
+            prediction = model.predict(features)[0]
 
-        fake_probability = probabilities[0] * 100
-        real_probability = probabilities[1] * 100
+            probabilities = model.predict_proba(features)[0]
 
-        # ------------------------------------
-        # Display Prediction
-        # ------------------------------------
+            fake_probability = probabilities[0] * 100
+            real_probability = probabilities[1] * 100
 
-        if prediction == 0:
-            st.error("🚨 Prediction: FAKE NEWS")
-        else:
-            st.success("✅ Prediction: REAL NEWS")
+            # ------------------------------------
+            # Display Prediction
+            # ------------------------------------
+
+            if prediction == 0:
+                st.error("🚨 Prediction: FAKE NEWS")
+            else:
+                st.success("✅ Prediction: REAL NEWS")
+
+            # ------------------------------------
+            # Prediction Confidence
+            # ------------------------------------
+
+            st.subheader("Prediction Confidence")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("Fake", f"{fake_probability:.2f}%")
+                st.progress(min(int(fake_probability), 100))
+
+            with col2:
+                st.metric("Real", f"{real_probability:.2f}%")
+                st.progress(min(int(real_probability), 100))
+
+            st.info(
+                "The model assigns probabilities to both classes. "
+                "The class with the higher probability becomes the final prediction."
+            )
+
+            # ------------------------------------
+            # Download Report
+            # ------------------------------------
+
+            report = pd.DataFrame({
+                "Article": [article],
+                "Prediction": [
+                    "FAKE NEWS" if prediction == 0 else "REAL NEWS"
+                ],
+                "Fake Probability (%)": [
+                    round(fake_probability, 2)
+                ],
+                "Real Probability (%)": [
+                    round(real_probability, 2)
+                ]
+            })
+
+            csv = report.to_csv(index=False).encode("utf-8")
+
+            st.download_button(
+                label="📥 Download Prediction Report",
+                data=csv,
+                file_name="prediction_report.csv",
+                mime="text/csv"
+            )
+
+            # ------------------------------------
+            # Save Prediction History
+            # ------------------------------------
+
+            st.session_state.history.append({
+                "Prediction": "FAKE NEWS" if prediction == 0 else "REAL NEWS",
+                "Fake Probability (%)": round(fake_probability, 2),
+                "Real Probability (%)": round(real_probability, 2),
+                "Article": article[:100] + "..." if len(article) > 100 else article
+            })
+
+            # ------------------------------------
+            # Debug Information
+            # ------------------------------------
+
+            with st.expander("🛠 Debug Information"):
+
+                st.write("**Processed Text**")
+                st.code(processed)
+
+                st.write(f"**Feature Shape:** {features.shape}")
+                st.write(f"**Non-zero Features:** {features.nnz}")
+
+        except Exception as e:
+            st.error("An unexpected error occurred while making the prediction.")
+            st.exception(e)
 
         # ------------------------------------
         # Probability Metrics

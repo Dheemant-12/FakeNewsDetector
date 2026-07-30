@@ -67,7 +67,40 @@ def load_models():
 
 
 model, vectorizer = load_models()
+# -------------------------------------------------
+# Sidebar
+# -------------------------------------------------
 
+st.sidebar.title("📰 Fake News Detector")
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("👨‍💻 Developer")
+st.sidebar.write("Dheemant Reddy")
+
+st.sidebar.subheader("🤖 Model")
+st.sidebar.write("Logistic Regression")
+
+st.sidebar.subheader("📚 Vectorizer")
+st.sidebar.write("TF-IDF")
+
+st.sidebar.subheader("🛠 Tech Stack")
+st.sidebar.markdown("""
+- Python
+- Streamlit
+- Scikit-learn
+- Pandas
+- Joblib
+""")
+
+st.sidebar.subheader("📌 Version")
+st.sidebar.write("v1.0")
+
+st.sidebar.markdown("---")
+
+st.sidebar.info(
+    "This project predicts whether a news article is Fake or Real using Machine Learning."
+)
 
 # -------------------------------------------------
 # Session State

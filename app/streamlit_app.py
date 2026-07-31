@@ -56,7 +56,7 @@ def validate_input(text):
 
 
 # -------------------------------------------------
-# Load Model Once
+# Load Model
 # -------------------------------------------------
 
 @st.cache_resource
@@ -67,6 +67,27 @@ def load_models():
 
 
 model, vectorizer = load_models()
+
+
+# -------------------------------------------------
+# Session State
+# -------------------------------------------------
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+
+# -------------------------------------------------
+# Page Configuration
+# -------------------------------------------------
+
+st.set_page_config(
+    page_title="Fake News Detector",
+    page_icon="📰",
+    layout="centered"
+)
+
+
 # -------------------------------------------------
 # Sidebar
 # -------------------------------------------------
@@ -85,6 +106,7 @@ st.sidebar.subheader("📚 Vectorizer")
 st.sidebar.write("TF-IDF")
 
 st.sidebar.subheader("🛠 Tech Stack")
+
 st.sidebar.markdown("""
 - Python
 - Streamlit
@@ -102,33 +124,19 @@ st.sidebar.info(
     "This project predicts whether a news article is Fake or Real using Machine Learning."
 )
 
-# -------------------------------------------------
-# Session State
-# -------------------------------------------------
-
-if "history" not in st.session_state:
-    st.session_state.history = []
+st.sidebar.markdown("---")
+st.sidebar.caption("Made with ❤️ using Streamlit")
 
 
 # -------------------------------------------------
-# Streamlit UI
+# Main UI
 # -------------------------------------------------
-
-st.set_page_config(
-    page_title="Fake News Detector",
-    page_icon="📰",
-    layout="centered"
-)
 
 st.title("📰 Fake News Detector")
 
 st.write(
     "Paste a news article below and the model will predict whether it is Fake or Real."
 )
-
-# -------------------------------------------------
-# Day 18 - Model Information
-# -------------------------------------------------
 
 st.divider()
 
@@ -145,8 +153,8 @@ with col2:
     st.metric("Classes", "Fake / Real")
 
 st.info(
-    "This application uses a TF-IDF Vectorizer to convert news articles into numerical "
-    "features and a Logistic Regression model to classify them as Fake or Real."
+    "This application uses a TF-IDF Vectorizer to convert text into numerical "
+    "features and a Logistic Regression model to classify news articles."
 )
 
 with st.expander("ℹ️ How does the model work?"):
@@ -155,16 +163,15 @@ with st.expander("ℹ️ How does the model work?"):
 ### Prediction Pipeline
 
 1. User enters a news article.
-2. Text is cleaned and normalized.
+2. Text is cleaned.
 3. Stop words are removed.
-4. TF-IDF converts the article into numerical features.
-5. Logistic Regression predicts Fake or Real news.
+4. TF-IDF converts text into numerical vectors.
+5. Logistic Regression predicts Fake or Real.
 6. Confidence scores are displayed.
-7. Users can download a prediction report.
+7. Prediction report can be downloaded.
 """)
 
 st.divider()
-
 
 # -------------------------------------------------
 # User Input
@@ -174,7 +181,6 @@ article = st.text_area(
     "Enter News Article",
     height=250
 )
-
 
 # -------------------------------------------------
 # Prediction
@@ -191,21 +197,9 @@ if st.button("Predict"):
 
         try:
 
-            # -----------------------------
-            # Preprocess
-            # -----------------------------
-
             processed = prepare_text(article)
 
-            # -----------------------------
-            # Vectorize
-            # -----------------------------
-
             features = vectorizer.transform([processed])
-
-            # -----------------------------
-            # Predict
-            # -----------------------------
 
             prediction = model.predict(features)[0]
 
@@ -214,18 +208,10 @@ if st.button("Predict"):
             fake_probability = probabilities[0] * 100
             real_probability = probabilities[1] * 100
 
-            # -----------------------------
-            # Display Prediction
-            # -----------------------------
-
             if prediction == 0:
                 st.error("🚨 Prediction: FAKE NEWS")
             else:
                 st.success("✅ Prediction: REAL NEWS")
-
-            # -----------------------------
-            # Confidence Scores
-            # -----------------------------
 
             st.subheader("Prediction Confidence")
 
@@ -243,9 +229,9 @@ if st.button("Predict"):
                 "The model assigns probabilities to both classes. "
                 "The class with the higher probability becomes the final prediction."
             )
-            # -----------------------------
-            # Download Report
-            # -----------------------------
+            # -------------------------------------------------
+            # Download Prediction Report
+            # -------------------------------------------------
 
             report = pd.DataFrame({
                 "Article": [article],
@@ -269,9 +255,9 @@ if st.button("Predict"):
                 mime="text/csv"
             )
 
-            # -----------------------------
+            # -------------------------------------------------
             # Save Prediction History
-            # -----------------------------
+            # -------------------------------------------------
 
             st.session_state.history.append({
                 "Prediction": "FAKE NEWS" if prediction == 0 else "REAL NEWS",
@@ -280,9 +266,9 @@ if st.button("Predict"):
                 "Article": article[:100] + "..." if len(article) > 100 else article
             })
 
-            # -----------------------------
+            # -------------------------------------------------
             # Debug Information
-            # -----------------------------
+            # -------------------------------------------------
 
             with st.expander("🛠 Debug Information"):
 
@@ -297,15 +283,56 @@ if st.button("Predict"):
             st.exception(e)
 
 # -------------------------------------------------
-# Prediction History
+# Session Statistics + Prediction History
 # -------------------------------------------------
 
 if st.session_state.history:
 
-    st.divider()
-    st.subheader("📜 Prediction History")
-
     history_df = pd.DataFrame(st.session_state.history)
+
+    total_predictions = len(history_df)
+
+    fake_predictions = (
+        history_df["Prediction"] == "FAKE NEWS"
+    ).sum()
+
+    real_predictions = (
+        history_df["Prediction"] == "REAL NEWS"
+    ).sum()
+
+    fake_percent = (fake_predictions / total_predictions) * 100
+    real_percent = (real_predictions / total_predictions) * 100
+
+    st.divider()
+
+    st.subheader("📈 Session Statistics")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Total", total_predictions)
+
+    with col2:
+        st.metric("Fake", fake_predictions)
+
+    with col3:
+        st.metric("Real", real_predictions)
+
+    st.write("**Fake Predictions**")
+    st.progress(int(fake_percent))
+    st.caption(f"{fake_percent:.1f}%")
+
+    st.write("**Real Predictions**")
+    st.progress(int(real_percent))
+    st.caption(f"{real_percent:.1f}%")
+
+    st.divider()
+
+    # -------------------------------------------------
+    # Prediction History
+    # -------------------------------------------------
+
+    st.subheader("📜 Prediction History")
 
     st.dataframe(
         history_df,
@@ -314,5 +341,7 @@ if st.session_state.history:
     )
 
     if st.button("🗑 Clear History"):
+
         st.session_state.history = []
+
         st.rerun()

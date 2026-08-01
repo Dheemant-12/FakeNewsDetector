@@ -207,7 +207,16 @@ if st.button("Predict"):
 
             fake_probability = probabilities[0] * 100
             real_probability = probabilities[1] * 100
+            confidence = max(fake_probability, real_probability)
 
+            if confidence >= 90:
+                confidence_level = "🟢 High"
+
+            elif confidence >= 70:
+                confidence_level = "🟡 Medium"
+
+            else:
+                confidence_level = "🔴 Low"
             if prediction == 0:
                 st.error("🚨 Prediction: FAKE NEWS")
             else:
@@ -229,6 +238,9 @@ if st.button("Predict"):
                 "The model assigns probabilities to both classes. "
                 "The class with the higher probability becomes the final prediction."
             )
+            st.subheader("Confidence Level")
+
+            st.success(f"{confidence_level} Confidence ({confidence:.2f}%)")
             # -------------------------------------------------
             # Download Prediction Report
             # -------------------------------------------------

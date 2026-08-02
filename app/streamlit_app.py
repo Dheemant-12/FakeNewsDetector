@@ -277,6 +277,15 @@ if st.button("Predict"):
                 "Real Probability (%)": round(real_probability, 2),
                 "Article": article[:100] + "..." if len(article) > 100 else article
             })
+            # -------------------------------------------------
+            # Important Words
+            # -------------------------------------------------
+
+            st.subheader("🔍 Important Words")
+
+            important_words = processed.split()[:15]
+
+            st.write(", ".join(important_words))
 
             # -------------------------------------------------
             # Debug Information

@@ -6,7 +6,7 @@ import streamlit as st
 import pandas as pd
 
 # -------------------------------------------------
-# Add Project Root
+# Add Project Root FIRST
 # -------------------------------------------------
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -14,6 +14,11 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# -------------------------------------------------
+# Imports AFTER sys.path
+# -------------------------------------------------
+
+from explainability.lime_explainer import explain_prediction
 from utils.preprocessing import clean_text
 from utils.tokenizer import tokenize_and_remove_stopwords
 
@@ -266,7 +271,24 @@ if st.button("Predict"):
                 file_name="prediction_report.csv",
                 mime="text/csv"
             )
+            # -------------------------------------------------
+            # LIME Explanation
+            # -------------------------------------------------
 
+            st.subheader("🧠 Why did the model predict this?")
+
+            explanation = explain_prediction(processed)
+
+            lime_df = pd.DataFrame(
+                explanation.as_list(),
+                columns=["Word", "Importance"]
+            )
+
+            st.dataframe(
+                lime_df,
+                use_container_width=True,
+                hide_index=True
+            )
             # -------------------------------------------------
             # Save Prediction History
             # -------------------------------------------------

@@ -4,6 +4,8 @@ import re
 import joblib
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 # -------------------------------------------------
 # Add Project Root FIRST
@@ -275,6 +277,7 @@ if st.button("Predict"):
             # LIME Explanation
             # -------------------------------------------------
 
+
             st.subheader("🧠 Why did the model predict this?")
 
             explanation = explain_prediction(processed)
@@ -289,6 +292,21 @@ if st.button("Predict"):
                 use_container_width=True,
                 hide_index=True
             )
+
+            fig, ax = plt.subplots(figsize=(8, 4))
+
+            lime_df = lime_df.sort_values("Importance")
+
+            ax.barh(
+                lime_df["Word"],
+                lime_df["Importance"]
+            )
+
+            ax.set_xlabel("Importance")
+            ax.set_title("Top Words Influencing Prediction")
+
+            st.pyplot(fig)
+            plt.close(fig)
             # -------------------------------------------------
             # Save Prediction History
             # -------------------------------------------------

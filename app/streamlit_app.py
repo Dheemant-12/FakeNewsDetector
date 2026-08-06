@@ -5,13 +5,15 @@ import joblib
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from datetime import datetime
 
 # -------------------------------------------------
 # Add Project Root FIRST
 # -------------------------------------------------
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
 
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
@@ -120,6 +122,7 @@ st.sidebar.markdown("""
 - Scikit-learn
 - Pandas
 - Joblib
+- LIME
 """)
 
 st.sidebar.subheader("📌 Version")
@@ -175,7 +178,8 @@ with st.expander("ℹ️ How does the model work?"):
 4. TF-IDF converts text into numerical vectors.
 5. Logistic Regression predicts Fake or Real.
 6. Confidence scores are displayed.
-7. Prediction report can be downloaded.
+7. LIME explains the prediction.
+8. Prediction reports and history can be downloaded.
 """)
 
 st.divider()
@@ -203,10 +207,21 @@ if st.button("Predict"):
     else:
 
         try:
+                        # -------------------------------------------------
+            # Preprocess
+            # -------------------------------------------------
 
             processed = prepare_text(article)
 
+            # -------------------------------------------------
+            # Vectorize
+            # -------------------------------------------------
+
             features = vectorizer.transform([processed])
+
+            # -------------------------------------------------
+            # Prediction
+            # -------------------------------------------------
 
             prediction = model.predict(features)[0]
 
@@ -214,7 +229,15 @@ if st.button("Predict"):
 
             fake_probability = probabilities[0] * 100
             real_probability = probabilities[1] * 100
-            confidence = max(fake_probability, real_probability)
+
+            confidence = max(
+                fake_probability,
+                real_probability
+            )
+
+            # -------------------------------------------------
+            # Confidence Level
+            # -------------------------------------------------
 
             if confidence >= 90:
                 confidence_level = "🟢 High"
@@ -224,48 +247,83 @@ if st.button("Predict"):
 
             else:
                 confidence_level = "🔴 Low"
+
+            # -------------------------------------------------
+            # Display Prediction
+            # -------------------------------------------------
+
             if prediction == 0:
                 st.error("🚨 Prediction: FAKE NEWS")
             else:
                 st.success("✅ Prediction: REAL NEWS")
+
+            # -------------------------------------------------
+            # Confidence Scores
+            # -------------------------------------------------
 
             st.subheader("Prediction Confidence")
 
             col1, col2 = st.columns(2)
 
             with col1:
-                st.metric("Fake", f"{fake_probability:.2f}%")
-                st.progress(min(int(fake_probability), 100))
+
+                st.metric(
+                    "Fake",
+                    f"{fake_probability:.2f}%"
+                )
+
+                st.progress(
+                    min(int(fake_probability), 100)
+                )
 
             with col2:
-                st.metric("Real", f"{real_probability:.2f}%")
-                st.progress(min(int(real_probability), 100))
+
+                st.metric(
+                    "Real",
+                    f"{real_probability:.2f}%"
+                )
+
+                st.progress(
+                    min(int(real_probability), 100)
+                )
 
             st.info(
                 "The model assigns probabilities to both classes. "
                 "The class with the higher probability becomes the final prediction."
             )
+
             st.subheader("Confidence Level")
 
-            st.success(f"{confidence_level} Confidence ({confidence:.2f}%)")
+            st.success(
+                f"{confidence_level} Confidence ({confidence:.2f}%)"
+            )
+
             # -------------------------------------------------
-            # Download Prediction Report
+            # Prediction Report
             # -------------------------------------------------
 
             report = pd.DataFrame({
+
                 "Article": [article],
+
                 "Prediction": [
-                    "FAKE NEWS" if prediction == 0 else "REAL NEWS"
+                    "FAKE NEWS"
+                    if prediction == 0
+                    else "REAL NEWS"
                 ],
+
                 "Fake Probability (%)": [
                     round(fake_probability, 2)
                 ],
+
                 "Real Probability (%)": [
                     round(real_probability, 2)
                 ]
             })
 
-            csv = report.to_csv(index=False).encode("utf-8")
+            csv = report.to_csv(
+                index=False
+            ).encode("utf-8")
 
             st.download_button(
                 label="📥 Download Prediction Report",
@@ -273,18 +331,25 @@ if st.button("Predict"):
                 file_name="prediction_report.csv",
                 mime="text/csv"
             )
+
             # -------------------------------------------------
             # LIME Explanation
             # -------------------------------------------------
 
+            st.subheader(
+                "🧠 Why did the model predict this?"
+            )
 
-            st.subheader("🧠 Why did the model predict this?")
-
-            explanation = explain_prediction(processed)
+            explanation = explain_prediction(
+                processed
+            )
 
             lime_df = pd.DataFrame(
                 explanation.as_list(),
-                columns=["Word", "Importance"]
+                columns=[
+                    "Word",
+                    "Importance"
+                ]
             )
 
             st.dataframe(
@@ -293,63 +358,147 @@ if st.button("Predict"):
                 hide_index=True
             )
 
-            fig, ax = plt.subplots(figsize=(8, 4))
+            # -------------------------------------------------
+            # LIME Graph
+            # -------------------------------------------------
 
-            lime_df = lime_df.sort_values("Importance")
+            fig, ax = plt.subplots(
+                figsize=(8, 4)
+            )
+
+            lime_df = lime_df.sort_values(
+                "Importance"
+            )
 
             ax.barh(
                 lime_df["Word"],
                 lime_df["Importance"]
             )
 
-            ax.set_xlabel("Importance")
-            ax.set_title("Top Words Influencing Prediction")
+            ax.set_title(
+                "Top Words Influencing Prediction"
+            )
+
+            ax.set_xlabel(
+                "Importance Score"
+            )
+
+            ax.axvline(
+                0,
+                color="black",
+                linewidth=1
+            )
 
             st.pyplot(fig)
+
             plt.close(fig)
-            # -------------------------------------------------
+                        # -------------------------------------------------
             # Save Prediction History
             # -------------------------------------------------
 
             st.session_state.history.append({
-                "Prediction": "FAKE NEWS" if prediction == 0 else "REAL NEWS",
-                "Fake Probability (%)": round(fake_probability, 2),
-                "Real Probability (%)": round(real_probability, 2),
-                "Article": article[:100] + "..." if len(article) > 100 else article
+
+                "Time":
+                    datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+
+                "Prediction":
+                    "FAKE NEWS"
+                    if prediction == 0
+                    else "REAL NEWS",
+
+                "Confidence (%)":
+                    round(confidence, 2),
+
+                "Fake Probability (%)":
+                    round(fake_probability, 2),
+
+                "Real Probability (%)":
+                    round(real_probability, 2),
+
+                "Article":
+                    article[:100] + "..."
+                    if len(article) > 100
+                    else article
             })
+
+            # -------------------------------------------------
+            # Export Session History
+            # -------------------------------------------------
+
+            history_df = pd.DataFrame(
+                st.session_state.history
+            )
+
+            st.subheader(
+                "📥 Export Session History"
+            )
+
+            history_csv = history_df.to_csv(
+                index=False
+            ).encode("utf-8")
+
+            st.download_button(
+                label="📥 Download Session History",
+                data=history_csv,
+                file_name="prediction_history.csv",
+                mime="text/csv"
+            )
+
             # -------------------------------------------------
             # Important Words
             # -------------------------------------------------
 
-            st.subheader("🔍 Important Words")
+            st.subheader(
+                "🔍 Important Words"
+            )
 
             important_words = processed.split()[:15]
 
-            st.write(", ".join(important_words))
+            st.write(
+                ", ".join(important_words)
+            )
 
             # -------------------------------------------------
             # Debug Information
             # -------------------------------------------------
 
-            with st.expander("🛠 Debug Information"):
+            with st.expander(
+                "🛠 Debug Information"
+            ):
 
-                st.write("**Processed Text:**")
+                st.write(
+                    "**Processed Text:**"
+                )
+
                 st.code(processed)
 
-                st.write(f"**Feature Shape:** {features.shape}")
-                st.write(f"**Non-zero Features:** {features.nnz}")
+                st.write(
+                    f"**Feature Shape:** {features.shape}"
+                )
+
+                st.write(
+                    f"**Non-zero Features:** {features.nnz}"
+                )
 
         except Exception as e:
-            st.error("An unexpected error occurred while making the prediction.")
+
+            st.error(
+                "An unexpected error occurred while making the prediction."
+            )
+
             st.exception(e)
 
 # -------------------------------------------------
-# Session Statistics + Prediction History
+# Session Statistics
 # -------------------------------------------------
 
 if st.session_state.history:
 
-    history_df = pd.DataFrame(st.session_state.history)
+    history_df = pd.DataFrame(
+        st.session_state.history
+    )
 
     total_predictions = len(history_df)
 
@@ -361,31 +510,53 @@ if st.session_state.history:
         history_df["Prediction"] == "REAL NEWS"
     ).sum()
 
-    fake_percent = (fake_predictions / total_predictions) * 100
-    real_percent = (real_predictions / total_predictions) * 100
+    fake_percent = (
+        fake_predictions /
+        total_predictions
+    ) * 100
+
+    real_percent = (
+        real_predictions /
+        total_predictions
+    ) * 100
 
     st.divider()
 
-    st.subheader("📈 Session Statistics")
+    st.subheader(
+        "📈 Session Statistics"
+    )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Total", total_predictions)
+        st.metric(
+            "Total",
+            total_predictions
+        )
 
     with col2:
-        st.metric("Fake", fake_predictions)
+        st.metric(
+            "Fake",
+            fake_predictions
+        )
 
     with col3:
-        st.metric("Real", real_predictions)
+        st.metric(
+            "Real",
+            real_predictions
+        )
 
     st.write("**Fake Predictions**")
     st.progress(int(fake_percent))
-    st.caption(f"{fake_percent:.1f}%")
+    st.caption(
+        f"{fake_percent:.1f}%"
+    )
 
     st.write("**Real Predictions**")
     st.progress(int(real_percent))
-    st.caption(f"{real_percent:.1f}%")
+    st.caption(
+        f"{real_percent:.1f}%"
+    )
 
     st.divider()
 
@@ -393,7 +564,9 @@ if st.session_state.history:
     # Prediction History
     # -------------------------------------------------
 
-    st.subheader("📜 Prediction History")
+    st.subheader(
+        "📜 Prediction History"
+    )
 
     st.dataframe(
         history_df,
@@ -401,7 +574,9 @@ if st.session_state.history:
         hide_index=True
     )
 
-    if st.button("🗑 Clear History"):
+    if st.button(
+        "🗑 Clear History"
+    ):
 
         st.session_state.history = []
 

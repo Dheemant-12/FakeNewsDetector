@@ -297,6 +297,18 @@ if st.button("Predict"):
             st.success(
                 f"{confidence_level} Confidence ({confidence:.2f}%)"
             )
+            # -------------------------------------------------
+            # Overall Confidence Gauge
+            # -------------------------------------------------
+
+            st.subheader("🎯 Overall Prediction Confidence")
+
+            st.progress(int(confidence))
+
+            st.metric(
+                "Confidence Score",
+                f"{confidence:.2f}%"
+            )
 
             # -------------------------------------------------
             # Prediction Report

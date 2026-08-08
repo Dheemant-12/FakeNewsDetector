@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+from model_metrics import calculate_metrics
 
 # -------------------------------------------------
 # Add Project Root FIRST
@@ -181,7 +182,57 @@ with st.expander("ℹ️ How does the model work?"):
 7. LIME explains the prediction.
 8. Prediction reports and history can be downloaded.
 """)
+# -------------------------------------------------
+# Model Performance Dashboard
+# -------------------------------------------------
 
+st.divider()
+
+st.subheader("📈 Model Performance")
+
+try:
+
+    metrics = calculate_metrics()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "Accuracy",
+            f"{metrics['Accuracy'] * 100:.2f}%"
+        )
+
+    with col2:
+        st.metric(
+            "Precision",
+            f"{metrics['Precision'] * 100:.2f}%"
+        )
+
+    with col3:
+        st.metric(
+            "Recall",
+            f"{metrics['Recall'] * 100:.2f}%"
+        )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            "F1 Score",
+            f"{metrics['F1 Score'] * 100:.2f}%"
+        )
+
+    with col2:
+        st.metric(
+            "AUC",
+            f"{metrics['AUC']:.4f}"
+        )
+
+except Exception as e:
+
+    st.warning(
+        "Model performance metrics could not be loaded."
+    )
 st.divider()
 
 # -------------------------------------------------
@@ -309,7 +360,17 @@ if st.button("Predict"):
                 "Confidence Score",
                 f"{confidence:.2f}%"
             )
+            if confidence >= 95:
+                st.success("The model is extremely confident about this prediction.")
 
+            elif confidence >= 80:
+                st.info("The model is reasonably confident about this prediction.")
+
+            else:
+                st.warning(
+                    "This prediction has relatively low confidence. "
+                    "Interpret the result carefully."
+                )
             # -------------------------------------------------
             # Prediction Report
             # -------------------------------------------------

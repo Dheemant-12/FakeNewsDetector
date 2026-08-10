@@ -3,5 +3,9 @@
     "precision": 0.99,
     "recall": 0.99,
     "f1_score": 0.99,
-    "auc": 0.9991
+    "auc": 0.9991,
+    "confusion_matrix": [
+        [4690, 6],
+        [8, 4276]
+    ]
 }

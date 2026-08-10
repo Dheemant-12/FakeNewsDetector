@@ -19,6 +19,7 @@ METRICS_PATH = os.path.join(
 def load_metrics():
 
     if not os.path.exists(METRICS_PATH):
+
         raise FileNotFoundError(
             "models/metrics.json was not found."
         )

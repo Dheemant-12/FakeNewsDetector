@@ -247,7 +247,78 @@ if metrics is not None:
 
     else:
         st.info("Confusion matrix data is not available.")
+# -------------------------------------------------
+# ROC Curve
+# -------------------------------------------------
 
+if metrics is not None:
+
+    st.subheader(
+        "📈 ROC Curve"
+    )
+
+    roc_data = metrics.get(
+        "roc_curve"
+    )
+
+    if roc_data:
+
+        fpr = roc_data.get("fpr", [])
+        tpr = roc_data.get("tpr", [])
+
+        if fpr and tpr:
+
+            fig, ax = plt.subplots(
+                figsize=(8, 5)
+            )
+
+            ax.plot(
+                fpr,
+                tpr,
+                label=f"AUC = {metrics['auc']:.4f}"
+            )
+
+            ax.plot(
+                [0, 1],
+                [0, 1],
+                linestyle="--",
+                label="Random Classifier"
+            )
+
+            ax.set_xlabel(
+                "False Positive Rate"
+            )
+
+            ax.set_ylabel(
+                "True Positive Rate"
+            )
+
+            ax.set_title(
+                "ROC Curve"
+            )
+
+            ax.legend()
+
+            st.pyplot(fig)
+
+            plt.close(fig)
+
+            st.info(
+                "A curve closer to the top-left corner "
+                "indicates better classification performance."
+            )
+
+        else:
+
+            st.info(
+                "ROC curve data is empty."
+            )
+
+    else:
+
+        st.info(
+            "ROC curve data is not available."
+        )
 
 # -------------------------------------------------
 # User Input

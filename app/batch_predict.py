@@ -3,109 +3,138 @@ import sys
 import joblib
 import pandas as pd
 
+
 # -------------------------------------------------
 # Add Project Root
 # -------------------------------------------------
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
 
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+
+# -------------------------------------------------
+# Project Imports
+# -------------------------------------------------
 
 from utils.preprocessing import clean_text
 from utils.tokenizer import tokenize_and_remove_stopwords
 
 
+# -------------------------------------------------
+# Load Model
+# -------------------------------------------------
+
+model = joblib.load(
+    "models/logistic_regression.joblib"
+)
+
+vectorizer = joblib.load(
+    "models/tfidf_vectorizer.joblib"
+)
+
+
+# -------------------------------------------------
+# Text Preprocessing
+# -------------------------------------------------
+
 def prepare_text(text):
-    """
-    Complete preprocessing pipeline.
-    """
+
     text = clean_text(text)
-    text = tokenize_and_remove_stopwords(text)
+
+    text = tokenize_and_remove_stopwords(
+        text
+    )
+
     return text
 
 
 # -------------------------------------------------
-# Load Model and Vectorizer
+# Batch Prediction
 # -------------------------------------------------
 
-print("=" * 60)
-print("Batch Fake News Prediction")
-print("=" * 60)
+def predict_batch(df):
 
-model = joblib.load("models/logistic_regression.joblib")
-vectorizer = joblib.load("models/tfidf_vectorizer.joblib")
+    if "text" not in df.columns:
 
-# -------------------------------------------------
-# Read Input CSV
-# -------------------------------------------------
+        raise ValueError(
+            "CSV must contain a 'text' column."
+        )
 
-input_file = input("Enter CSV file path: ").strip()
+    # Remove empty articles
 
-if not os.path.exists(input_file):
-    print(f"\n❌ File not found: {input_file}")
-    sys.exit()
+    df = df.copy()
 
-df = pd.read_csv(input_file)
+    df["text"] = df["text"].fillna("")
 
-if "text" not in df.columns:
-    print("\n❌ CSV must contain a 'text' column.")
-    sys.exit()
+    df = df[
+        df["text"].str.strip() != ""
+    ].copy()
 
-print(f"\nLoaded {len(df)} articles.")
+    if df.empty:
 
-# -------------------------------------------------
-# Preprocess
-# -------------------------------------------------
+        raise ValueError(
+            "The CSV does not contain any valid articles."
+        )
 
-print("Preprocessing articles...")
+    # Preprocess articles
 
-df["processed_text"] = df["text"].apply(prepare_text)
+    processed_text = df["text"].apply(
+        prepare_text
+    )
 
-# -------------------------------------------------
-# Vectorize
-# -------------------------------------------------
+    # Convert to TF-IDF
 
-features = vectorizer.transform(df["processed_text"])
+    features = vectorizer.transform(
+        processed_text
+    )
 
-# -------------------------------------------------
-# Predict
-# -------------------------------------------------
+    # Predictions
 
-predictions = model.predict(features)
-probabilities = model.predict_proba(features)
+    predictions = model.predict(
+        features
+    )
 
-df["prediction"] = [
-    "FAKE NEWS" if pred == 0 else "REAL NEWS"
-    for pred in predictions
-]
+    probabilities = model.predict_proba(
+        features
+    )
 
-df["fake_probability"] = (probabilities[:, 0] * 100).round(2)
-df["real_probability"] = (probabilities[:, 1] * 100).round(2)
+    # Create results
 
-# -------------------------------------------------
-# Save Output
-# -------------------------------------------------
+    results = pd.DataFrame({
 
-output_file = "predictions.csv"
+        "Article": df["text"].values,
 
-df.to_csv(output_file, index=False)
+        "Prediction": [
+            "FAKE NEWS"
+            if prediction == 0
+            else "REAL NEWS"
+            for prediction in predictions
+        ],
 
-print("\n" + "=" * 60)
-print("Batch Prediction Completed!")
-print("=" * 60)
-print(f"Total Articles : {len(df)}")
-print(f"Results Saved  : {output_file}")
+        "Fake Probability (%)": [
+            round(probability[0] * 100, 2)
+            for probability in probabilities
+        ],
 
-print("\nSample Predictions:")
-print(
-    df[
-        [
-            "prediction",
-            "fake_probability",
-            "real_probability",
+        "Real Probability (%)": [
+            round(probability[1] * 100, 2)
+            for probability in probabilities
+        ],
+
+        "Confidence (%)": [
+            round(
+                max(
+                    probability[0],
+                    probability[1]
+                ) * 100,
+                2
+            )
+            for probability in probabilities
         ]
-    ].head()
-)
+    })
 
-print("=" * 60)
+    return results

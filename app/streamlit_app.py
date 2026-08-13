@@ -767,3 +767,131 @@ if st.session_state.history:
         st.session_state.history = []
 
         st.rerun()
+# =================================================
+# Batch Prediction
+# =================================================
+
+st.divider()
+
+st.subheader(
+    "📂 Batch News Prediction"
+)
+
+st.write(
+    "Upload a CSV file containing a column named "
+    "'text' to predict multiple news articles at once."
+)
+
+uploaded_file = st.file_uploader(
+    "Upload CSV",
+    type=["csv"]
+)
+
+if uploaded_file is not None:
+
+    try:
+
+        batch_df = pd.read_csv(
+            uploaded_file
+        )
+
+        if "text" not in batch_df.columns:
+
+            st.error(
+                "❌ CSV must contain a 'text' column."
+            )
+
+        else:
+
+            st.write(
+                f"📄 Articles found: "
+                f"{len(batch_df)}"
+            )
+
+            if st.button(
+                "🚀 Predict Batch"
+            ):
+
+                results = predict_batch(
+                    batch_df
+                )
+
+                st.success(
+                    f"Successfully predicted "
+                    f"{len(results)} articles."
+                )
+
+                # -----------------------------------------
+                # Statistics
+                # -----------------------------------------
+
+                fake_count = (
+                    results["Prediction"]
+                    == "FAKE NEWS"
+                ).sum()
+
+                real_count = (
+                    results["Prediction"]
+                    == "REAL NEWS"
+                ).sum()
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+
+                    st.metric(
+                        "Total",
+                        len(results)
+                    )
+
+                with col2:
+
+                    st.metric(
+                        "Fake",
+                        fake_count
+                    )
+
+                with col3:
+
+                    st.metric(
+                        "Real",
+                        real_count
+                    )
+
+                # -----------------------------------------
+                # Results
+                # -----------------------------------------
+
+                st.subheader(
+                    "📊 Batch Results"
+                )
+
+                st.dataframe(
+                    results,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+                # -----------------------------------------
+                # Download
+                # -----------------------------------------
+
+                batch_csv = results.to_csv(
+                    index=False
+                ).encode("utf-8")
+
+                st.download_button(
+                    label="📥 Download Batch Results",
+                    data=batch_csv,
+                    file_name="batch_predictions.csv",
+                    mime="text/csv"
+                )
+
+    except Exception as e:
+
+        st.error(
+            "An error occurred while processing "
+            "the CSV file."
+        )
+
+        st.exception(e)

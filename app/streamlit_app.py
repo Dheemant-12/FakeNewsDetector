@@ -1232,12 +1232,145 @@ if uploaded_file is not None:
                     "📊 Batch Results"
                 )
 
-                st.dataframe(
-                    results,
-                    use_container_width=True,
-                    hide_index=True
+
+                # -------------------------------------------------
+                # Batch Filters
+                # -------------------------------------------------
+
+                st.write(
+                    "### 🔎 Filter Results"
                 )
 
+
+                filter_col1, filter_col2 = st.columns(2)
+
+
+                with filter_col1:
+
+                    prediction_filter = st.selectbox(
+                        "Prediction",
+                        [
+                            "All",
+                            "FAKE NEWS",
+                            "REAL NEWS"
+                        ],
+                        key="prediction_filter"
+                    )
+
+
+                with filter_col2:
+
+                    confidence_filter = st.selectbox(
+                        "Confidence",
+                        [
+                            "All",
+                            "High (90%+)",
+                            "Medium (70% - 89%)",
+                            "Low (<70%)"
+                        ],
+                        key="confidence_filter"
+                    )
+
+
+                # -------------------------------------------------
+                # Search
+                # -------------------------------------------------
+
+                search_text = st.text_input(
+                    "🔍 Search Articles",
+                    placeholder="Enter a keyword..."
+                )
+
+
+                # -------------------------------------------------
+                # Create Filtered DataFrame
+                # -------------------------------------------------
+
+                filtered_results = results.copy()
+
+
+                # -------------------------------------------------
+                # Prediction Filter
+                # -------------------------------------------------
+
+                if prediction_filter != "All":
+
+                    filtered_results = filtered_results[
+                        filtered_results["Prediction"]
+                        == prediction_filter
+                    ]
+
+
+                # -------------------------------------------------
+                # Confidence Filter
+                # -------------------------------------------------
+
+                if confidence_filter == "High (90%+)":
+
+                    filtered_results = filtered_results[
+                        filtered_results["Confidence (%)"] >= 90
+                    ]
+
+
+                elif confidence_filter == "Medium (70% - 89%)":
+
+                    filtered_results = filtered_results[
+                        (filtered_results["Confidence (%)"] >= 70)
+                        &
+                        (filtered_results["Confidence (%)"] < 90)
+                    ]
+
+
+                elif confidence_filter == "Low (<70%)":
+
+                    filtered_results = filtered_results[
+                        filtered_results["Confidence (%)"] < 70
+                    ]
+
+
+                # -------------------------------------------------
+                # Search Filter
+                # -------------------------------------------------
+
+                if search_text.strip():
+
+                    filtered_results = filtered_results[
+                        filtered_results["Article"]
+                        .str.contains(
+                            search_text,
+                            case=False,
+                            na=False
+                        )
+                    ]
+
+
+                # -------------------------------------------------
+                # Filter Statistics
+                # -------------------------------------------------
+
+                st.write(
+                    f"Showing **{len(filtered_results)}** "
+                    f"of **{len(results)}** articles"
+                )
+
+
+                # -------------------------------------------------
+                # Display Filtered Results
+                # -------------------------------------------------
+
+                if filtered_results.empty:
+
+                    st.warning(
+                        "No articles match the selected filters."
+                    )
+
+                else:
+
+                    st.dataframe(
+                        filtered_results,
+                        use_container_width=True,
+                        hide_index=True
+                    )
 
                 # -------------------------------------------------
                 # Prediction Distribution

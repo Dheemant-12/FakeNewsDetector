@@ -1469,7 +1469,7 @@ if uploaded_file is not None:
                 # Download Batch Results
                 # -------------------------------------------------
 
-                batch_csv = results.to_csv(
+                batch_csv = filtered_results.to_csv(
                     index=False
                 ).encode("utf-8")
 

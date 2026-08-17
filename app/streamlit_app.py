@@ -7,22 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-
-# -------------------------------------------------
-# Add Project Root FIRST
-# -------------------------------------------------
-
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
-)
-
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-
-
-# -------------------------------------------------
-# Project Imports
-# -------------------------------------------------
 
 from model_metrics import load_metrics
 from explainability.lime_explainer import explain_prediction
@@ -30,153 +17,63 @@ from utils.preprocessing import clean_text
 from utils.tokenizer import tokenize_and_remove_stopwords
 from batch_predict import predict_batch
 
+st.set_page_config(page_title="Fake News Detector", page_icon="📰", layout="wide")
 
-# -------------------------------------------------
-# Page Configuration
-# -------------------------------------------------
-
-st.set_page_config(
-    page_title="Fake News Detector",
-    page_icon="📰",
-    layout="centered"
-)
-
-
-# -------------------------------------------------
-# Text Preprocessing
-# -------------------------------------------------
 
 def prepare_text(text):
-
     text = clean_text(text)
+    return tokenize_and_remove_stopwords(text)
 
-    text = tokenize_and_remove_stopwords(
-        text
-    )
-
-    return text
-
-
-# -------------------------------------------------
-# Input Validation
-# -------------------------------------------------
 
 def validate_input(text):
-
     text = text.strip()
-
     if not text:
-        return (
-            False,
-            "Please enter a news article."
-        )
-
-    if not re.search(
-        r"[A-Za-z]",
-        text
-    ):
-        return (
-            False,
-            "Input should contain alphabetic text."
-        )
-
+        return False, "Please enter a news article."
+    if not re.search(r"[A-Za-z]", text):
+        return False, "Input should contain alphabetic text."
     if len(text.split()) < 8:
-        return (
-            False,
-            "Please enter a longer news article "
-            "(at least 8 words)."
-        )
-
+        return False, "Please enter a longer news article (at least 8 words)."
     return True, ""
 
 
-# -------------------------------------------------
-# Load Model
-# -------------------------------------------------
-
 @st.cache_resource
 def load_models():
-
-    model = joblib.load(
-        "models/logistic_regression.joblib"
-    )
-
-    vectorizer = joblib.load(
-        "models/tfidf_vectorizer.joblib"
-    )
-
+    model = joblib.load("models/logistic_regression.joblib")
+    vectorizer = joblib.load("models/tfidf_vectorizer.joblib")
     return model, vectorizer
 
 
 model, vectorizer = load_models()
 
 
-# -------------------------------------------------
-# Load Saved Metrics
-# -------------------------------------------------
-
 @st.cache_data
 def get_model_metrics():
-
     return load_metrics()
 
 
 try:
-
     metrics = get_model_metrics()
-
 except Exception:
-
     metrics = None
 
 
-# -------------------------------------------------
-# Session State
-# -------------------------------------------------
-
 if "history" not in st.session_state:
-
     st.session_state.history = []
 
 
-# -------------------------------------------------
+# =================================================
 # Sidebar
-# -------------------------------------------------
+# =================================================
 
-st.sidebar.title(
-    "📰 Fake News Detector"
-)
-
+st.sidebar.title("📰 Fake News Detector")
 st.sidebar.markdown("---")
-
-st.sidebar.subheader(
-    "👨‍💻 Developer"
-)
-
-st.sidebar.write(
-    "Dheemant Reddy"
-)
-
-st.sidebar.subheader(
-    "🤖 Model"
-)
-
-st.sidebar.write(
-    "Logistic Regression"
-)
-
-st.sidebar.subheader(
-    "📚 Vectorizer"
-)
-
-st.sidebar.write(
-    "TF-IDF"
-)
-
-st.sidebar.subheader(
-    "🛠 Tech Stack"
-)
-
+st.sidebar.subheader("👨‍💻 Developer")
+st.sidebar.write("Dheemant Reddy")
+st.sidebar.subheader("🤖 Model")
+st.sidebar.write("Logistic Regression")
+st.sidebar.subheader("📚 Vectorizer")
+st.sidebar.write("TF-IDF")
+st.sidebar.subheader("🛠 Tech Stack")
 st.sidebar.markdown("""
 - Python
 - Streamlit
@@ -186,1308 +83,570 @@ st.sidebar.markdown("""
 - LIME
 - Matplotlib
 """)
-
-st.sidebar.subheader(
-    "📌 Version"
-)
-
-st.sidebar.write(
-    "v1.0"
-)
-
+st.sidebar.subheader("📌 Version")
+st.sidebar.write("v1.0")
 st.sidebar.markdown("---")
-
-st.sidebar.info(
-    "This project predicts whether a news article "
-    "is Fake or Real using Machine Learning."
-)
-
+st.sidebar.info("This project predicts whether a news article is Fake or Real using Machine Learning.")
 st.sidebar.markdown("---")
-
-st.sidebar.caption(
-    "Made with ❤️ using Streamlit"
-)
+st.sidebar.caption("Made with ❤️ using Streamlit")
 
 
-# -------------------------------------------------
-# Main UI
-# -------------------------------------------------
+# =================================================
+# Header + Navigation
+# =================================================
 
-st.title(
-    "📰 Fake News Detector"
-)
+st.title("📰 Fake News Detector")
+st.write("Machine Learning powered Fake News Detection and Analysis System.")
 
-st.write(
-    "Paste a news article below and the model "
-    "will predict whether it is Fake or Real."
-)
-
-st.divider()
+tab_dashboard, tab_single, tab_batch = st.tabs([
+    "📊 Dashboard",
+    "🔎 Single Prediction",
+    "📂 Batch Prediction"
+])
 
 
-# -------------------------------------------------
-# Model Information
-# -------------------------------------------------
+# =================================================
+# DASHBOARD TAB
+# =================================================
 
-st.subheader(
-    "📊 Model Information"
-)
+with tab_dashboard:
 
-col1, col2 = st.columns(2)
+    st.header("📊 Model Dashboard")
+    st.write("Overview of the Fake News Detection model and its performance.")
+    st.divider()
 
-with col1:
+    st.subheader("🤖 Model Information")
 
-    st.metric(
-        "Model",
-        "Logistic Regression"
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Model", "Logistic Regression")
+    with col2:
+        st.metric("Vectorizer", "TF-IDF")
+    with col3:
+        st.metric("Features", "5000")
+    with col4:
+        st.metric("Classes", "Fake / Real")
+
+    st.info(
+        "The application uses TF-IDF to convert news text into numerical features "
+        "and Logistic Regression to classify the article."
     )
 
-    st.metric(
-        "Vectorizer",
-        "TF-IDF"
-    )
-
-with col2:
-
-    st.metric(
-        "Features",
-        "5000"
-    )
-
-    st.metric(
-        "Classes",
-        "Fake / Real"
-    )
-
-
-st.info(
-    "This application uses a TF-IDF Vectorizer "
-    "to convert text into numerical features and "
-    "a Logistic Regression model to classify "
-    "news articles."
-)
-
-
-with st.expander(
-    "ℹ️ How does the model work?"
-):
-
-    st.markdown("""
+    with st.expander("ℹ️ How does the model work?"):
+        st.markdown("""
 ### Prediction Pipeline
 
 1. User enters a news article.
-2. Text is cleaned.
+2. Text is cleaned and normalized.
 3. Stop words are removed.
-4. TF-IDF converts text into numerical vectors.
+4. TF-IDF converts the text into numerical features.
 5. Logistic Regression predicts Fake or Real.
 6. Confidence scores are displayed.
 7. LIME explains the prediction.
-8. Prediction reports and history can be downloaded.
-9. Multiple articles can be analyzed using CSV batch prediction.
+8. Prediction history is stored for the session.
+9. CSV files can be analyzed in batch mode.
 """)
 
+    st.divider()
+    st.subheader("📈 Model Performance")
 
-st.divider()
+    if metrics is not None:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Accuracy", f"{metrics['accuracy'] * 100:.2f}%")
+        with col2:
+            st.metric("Precision", f"{metrics['precision'] * 100:.2f}%")
+        with col3:
+            st.metric("Recall", f"{metrics['recall'] * 100:.2f}%")
 
-
-# -------------------------------------------------
-# Model Performance
-# -------------------------------------------------
-
-st.subheader(
-    "📈 Model Performance"
-)
-
-if metrics is not None:
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        st.metric(
-            "Accuracy",
-            f"{metrics['accuracy'] * 100:.2f}%"
-        )
-
-    with col2:
-
-        st.metric(
-            "Precision",
-            f"{metrics['precision'] * 100:.2f}%"
-        )
-
-    with col3:
-
-        st.metric(
-            "Recall",
-            f"{metrics['recall'] * 100:.2f}%"
-        )
-
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.metric(
-            "F1 Score",
-            f"{metrics['f1_score'] * 100:.2f}%"
-        )
-
-    with col2:
-
-        st.metric(
-            "AUC",
-            f"{metrics['auc']:.4f}"
-        )
-
-
-    st.info(
-        "These metrics were calculated during model "
-        "evaluation and saved for fast access."
-    )
-
-else:
-
-    st.warning(
-        "Model performance metrics could not be loaded."
-    )
-
-
-# -------------------------------------------------
-# Confusion Matrix
-# -------------------------------------------------
-
-if metrics is not None:
-
-    st.subheader(
-        "🔲 Confusion Matrix"
-    )
-
-    matrix = metrics.get(
-        "confusion_matrix"
-    )
-
-    if matrix:
-
-        confusion_df = pd.DataFrame(
-            matrix,
-            index=[
-                "Actual Fake",
-                "Actual Real"
-            ],
-            columns=[
-                "Predicted Fake",
-                "Predicted Real"
-            ]
-        )
-
-        st.dataframe(
-            confusion_df,
-            use_container_width=True
-        )
-
-        st.markdown("""
-### How to read the matrix
-
-- **Actual Fake → Predicted Fake:** Correctly detected fake news.
-- **Actual Fake → Predicted Real:** Fake news incorrectly classified as real.
-- **Actual Real → Predicted Fake:** Real news incorrectly classified as fake.
-- **Actual Real → Predicted Real:** Correctly detected real news.
-""")
-
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("F1 Score", f"{metrics['f1_score'] * 100:.2f}%")
+        with col2:
+            st.metric("AUC", f"{metrics['auc']:.4f}")
     else:
+        st.warning("Model performance metrics could not be loaded.")
 
-        st.info(
-            "Confusion matrix data is not available."
-        )
-    # -------------------------------------------------
-# ROC Curve
-# -------------------------------------------------
+    if metrics is not None:
+        st.divider()
+        st.subheader("🔲 Confusion Matrix")
 
-if metrics is not None:
+        matrix = metrics.get("confusion_matrix")
 
-    st.subheader(
-        "📈 ROC Curve"
-    )
-
-    roc_data = metrics.get(
-        "roc_curve"
-    )
-
-    if roc_data:
-
-        fpr = roc_data.get(
-            "fpr",
-            []
-        )
-
-        tpr = roc_data.get(
-            "tpr",
-            []
-        )
-
-        if fpr and tpr:
-
-            fig, ax = plt.subplots(
-                figsize=(8, 5)
+        if matrix:
+            confusion_df = pd.DataFrame(
+                matrix,
+                index=["Actual Fake", "Actual Real"],
+                columns=["Predicted Fake", "Predicted Real"]
             )
-
-            ax.plot(
-                fpr,
-                tpr,
-                label=f"AUC = {metrics['auc']:.4f}"
-            )
-
-            ax.plot(
-                [0, 1],
-                [0, 1],
-                linestyle="--",
-                label="Random Classifier"
-            )
-
-            ax.set_xlabel(
-                "False Positive Rate"
-            )
-
-            ax.set_ylabel(
-                "True Positive Rate"
-            )
-
-            ax.set_title(
-                "ROC Curve"
-            )
-
-            ax.legend()
-
-            st.pyplot(fig)
-
-            plt.close(fig)
-
-            st.info(
-                "A curve closer to the top-left corner "
-                "indicates better classification performance."
-            )
-
+            st.dataframe(confusion_df, use_container_width=True)
         else:
+            st.info("Confusion matrix data is not available.")
 
-            st.info(
-                "ROC curve data is empty."
-            )
+        st.divider()
+        st.subheader("📈 ROC Curve")
 
-    else:
+        roc_data = metrics.get("roc_curve")
 
-        st.info(
-            "ROC curve data is not available."
-        )
+        if roc_data:
+            fpr = roc_data.get("fpr", [])
+            tpr = roc_data.get("tpr", [])
 
-
-# -------------------------------------------------
-# Single Article Prediction
-# -------------------------------------------------
-
-st.divider()
-
-st.subheader(
-    "📝 Single Article Prediction"
-)
-
-article = st.text_area(
-    "Enter News Article",
-    height=250
-)
-
-
-if st.button(
-    "Predict",
-    key="single_predict"
-):
-
-    is_valid, message = validate_input(
-        article
-    )
-
-    if not is_valid:
-
-        st.warning(
-            message
-        )
-
-    else:
-
-        try:
-
-            # -------------------------------------------------
-            # Preprocess
-            # -------------------------------------------------
-
-            processed = prepare_text(
-                article
-            )
-
-
-            # -------------------------------------------------
-            # Vectorize
-            # -------------------------------------------------
-
-            features = vectorizer.transform(
-                [processed]
-            )
-
-
-            # -------------------------------------------------
-            # Prediction
-            # -------------------------------------------------
-
-            prediction = model.predict(
-                features
-            )[0]
-
-            probabilities = model.predict_proba(
-                features
-            )[0]
-
-
-            # -------------------------------------------------
-            # Probabilities
-            # -------------------------------------------------
-
-            fake_probability = (
-                probabilities[0] * 100
-            )
-
-            real_probability = (
-                probabilities[1] * 100
-            )
-
-            confidence = max(
-                fake_probability,
-                real_probability
-            )
-
-
-            # -------------------------------------------------
-            # Confidence Level
-            # -------------------------------------------------
-
-            if confidence >= 90:
-
-                confidence_level = "🟢 High"
-
-            elif confidence >= 70:
-
-                confidence_level = "🟡 Medium"
-
+            if fpr and tpr:
+                fig, ax = plt.subplots(figsize=(8, 5))
+                ax.plot(fpr, tpr, label=f"AUC = {metrics['auc']:.4f}")
+                ax.plot([0, 1], [0, 1], linestyle="--", label="Random Classifier")
+                ax.set_xlabel("False Positive Rate")
+                ax.set_ylabel("True Positive Rate")
+                ax.set_title("ROC Curve")
+                ax.legend()
+                st.pyplot(fig)
+                plt.close(fig)
             else:
+                st.info("ROC curve data is empty.")
+        else:
+            st.info("ROC curve data is not available.")
 
-                confidence_level = "🔴 Low"
 
-
-            # -------------------------------------------------
-            # Prediction Result
-            # -------------------------------------------------
-
-            if prediction == 0:
-
-                st.error(
-                    "🚨 Prediction: FAKE NEWS"
-                )
-
-            else:
-
-                st.success(
-                    "✅ Prediction: REAL NEWS"
-                )
-
-
-            # -------------------------------------------------
-            # Prediction Confidence
-            # -------------------------------------------------
-
-            st.subheader(
-                "Prediction Confidence"
-            )
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                st.metric(
-                    "Fake",
-                    f"{fake_probability:.2f}%"
-                )
-
-                st.progress(
-                    min(
-                        int(fake_probability),
-                        100
-                    )
-                )
-
-            with col2:
-
-                st.metric(
-                    "Real",
-                    f"{real_probability:.2f}%"
-                )
-
-                st.progress(
-                    min(
-                        int(real_probability),
-                        100
-                    )
-                )
-
-
-            st.info(
-                "The model assigns probabilities to both "
-                "classes. The class with the higher "
-                "probability becomes the final prediction."
-            )
-
-
-            # -------------------------------------------------
-            # Confidence Level
-            # -------------------------------------------------
-
-            st.subheader(
-                "Confidence Level"
-            )
-
-            st.success(
-                f"{confidence_level} "
-                f"Confidence ({confidence:.2f}%)"
-            )
-
-
-            # -------------------------------------------------
-            # Overall Confidence
-            # -------------------------------------------------
-
-            st.subheader(
-                "🎯 Overall Prediction Confidence"
-            )
-
-            st.progress(
-                min(
-                    int(confidence),
-                    100
-                )
-            )
-
-            st.metric(
-                "Confidence Score",
-                f"{confidence:.2f}%"
-            )
-
-
-            if confidence >= 95:
-
-                st.success(
-                    "The model is extremely confident "
-                    "about this prediction."
-                )
-
-            elif confidence >= 80:
-
-                st.info(
-                    "The model is reasonably confident "
-                    "about this prediction."
-                )
-
-            else:
-
-                st.warning(
-                    "This prediction has relatively low "
-                    "confidence. Interpret the result carefully."
-                )
-
-
-            # -------------------------------------------------
-            # Prediction Report
-            # -------------------------------------------------
-
-            report = pd.DataFrame({
-
-                "Article": [
-                    article
-                ],
-
-                "Prediction": [
-                    "FAKE NEWS"
-                    if prediction == 0
-                    else "REAL NEWS"
-                ],
-
-                "Fake Probability (%)": [
-                    round(
-                        fake_probability,
-                        2
-                    )
-                ],
-
-                "Real Probability (%)": [
-                    round(
-                        real_probability,
-                        2
-                    )
-                ],
-
-                "Confidence (%)": [
-                    round(
-                        confidence,
-                        2
-                    )
-                ]
-            })
-
-
-            csv = report.to_csv(
-                index=False
-            ).encode("utf-8")
-
-
-            st.download_button(
-                label="📥 Download Prediction Report",
-                data=csv,
-                file_name="prediction_report.csv",
-                mime="text/csv"
-            )
-
-
-            # -------------------------------------------------
-            # LIME Explanation
-            # -------------------------------------------------
-
-            st.subheader(
-                "🧠 Why did the model predict this?"
-            )
-
-            explanation = explain_prediction(
-                processed
-            )
-
-
-            lime_df = pd.DataFrame(
-                explanation.as_list(),
-                columns=[
-                    "Word",
-                    "Importance"
-                ]
-            )
-
-
-            st.dataframe(
-                lime_df,
-                use_container_width=True,
-                hide_index=True
-            )
-
-
-            # -------------------------------------------------
-            # LIME Graph
-            # -------------------------------------------------
-
-            st.subheader(
-                "📊 Word Importance"
-            )
-
-            fig, ax = plt.subplots(
-                figsize=(8, 4)
-            )
-
-
-            lime_df = lime_df.sort_values(
-                "Importance"
-            )
-
-
-            ax.barh(
-                lime_df["Word"],
-                lime_df["Importance"]
-            )
-
-
-            ax.set_title(
-                "Top Words Influencing Prediction"
-            )
-
-            ax.set_xlabel(
-                "Importance Score"
-            )
-
-            ax.axvline(
-                0,
-                color="black",
-                linewidth=1
-            )
-
-
-            st.pyplot(
-                fig
-            )
-
-            plt.close(
-                fig
-            )
-
-
-            # -------------------------------------------------
-            # Save Prediction History
-            # -------------------------------------------------
-
-            st.session_state.history.append({
-
-                "Time": datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
-
-                "Prediction": (
-                    "FAKE NEWS"
-                    if prediction == 0
-                    else "REAL NEWS"
-                ),
-
-                "Confidence (%)": round(
-                    confidence,
-                    2
-                ),
-
-                "Fake Probability (%)": round(
-                    fake_probability,
-                    2
-                ),
-
-                "Real Probability (%)": round(
-                    real_probability,
-                    2
-                ),
-
-                "Article": (
-                    article[:100] + "..."
-                    if len(article) > 100
-                    else article
-                )
-            })
-
-
-            # -------------------------------------------------
-            # Important Words
-            # -------------------------------------------------
-
-            st.subheader(
-                "🔍 Important Words"
-            )
-
-            important_words = (
-                processed.split()[:15]
-            )
-
-            if important_words:
-
-                st.write(
-                    ", ".join(
-                        important_words
-                    )
-                )
-
-            else:
-
-                st.write(
-                    "No important words found."
-                )
-
-
-            # -------------------------------------------------
-            # Debug Information
-            # -------------------------------------------------
-
-            with st.expander(
-                "🛠 Debug Information"
-            ):
-
-                st.write(
-                    "**Processed Text:**"
-                )
-
-                st.code(
-                    processed
-                )
-
-                st.write(
-                    f"**Feature Shape:** "
-                    f"{features.shape}"
-                )
-
-                st.write(
-                    f"**Non-zero Features:** "
-                    f"{features.nnz}"
-                )
-
-
-        except Exception as e:
-
-            st.error(
-                "An unexpected error occurred "
-                "while making the prediction."
-            )
-
-            st.exception(e)
-            # =================================================
-# Session Statistics
+# =================================================
+# SINGLE PREDICTION TAB
 # =================================================
 
-if st.session_state.history:
+with tab_single:
 
-    history_df = pd.DataFrame(
-        st.session_state.history
-    )
-
-    total_predictions = len(
-        history_df
-    )
-
-    fake_predictions = (
-        history_df["Prediction"] == "FAKE NEWS"
-    ).sum()
-
-    real_predictions = (
-        history_df["Prediction"] == "REAL NEWS"
-    ).sum()
-
-    fake_percent = (
-        fake_predictions /
-        total_predictions
-    ) * 100
-
-    real_percent = (
-        real_predictions /
-        total_predictions
-    ) * 100
-
-
-    # -------------------------------------------------
-    # Statistics
-    # -------------------------------------------------
-
+    st.header("🔎 Single Article Prediction")
+    st.write("Enter one news article and let the model analyze it.")
     st.divider()
 
-    st.subheader(
-        "📈 Session Statistics"
+    article = st.text_area(
+        "Enter News Article",
+        height=250,
+        placeholder="Paste a news article here..."
     )
 
-    col1, col2, col3 = st.columns(3)
+    if st.button("🚀 Predict", key="single_predict"):
 
-    with col1:
+        is_valid, message = validate_input(article)
 
-        st.metric(
-            "Total",
-            total_predictions
-        )
-
-    with col2:
-
-        st.metric(
-            "Fake",
-            fake_predictions
-        )
-
-    with col3:
-
-        st.metric(
-            "Real",
-            real_predictions
-        )
-
-
-    st.write(
-        "**Fake Predictions**"
-    )
-
-    st.progress(
-        min(
-            int(fake_percent),
-            100
-        )
-    )
-
-    st.caption(
-        f"{fake_percent:.1f}%"
-    )
-
-
-    st.write(
-        "**Real Predictions**"
-    )
-
-    st.progress(
-        min(
-            int(real_percent),
-            100
-        )
-    )
-
-    st.caption(
-        f"{real_percent:.1f}%"
-    )
-
-
-    # -------------------------------------------------
-    # Prediction History
-    # -------------------------------------------------
-
-    st.divider()
-
-    st.subheader(
-        "📜 Prediction History"
-    )
-
-    st.dataframe(
-        history_df,
-        use_container_width=True,
-        hide_index=True
-    )
-
-
-    # -------------------------------------------------
-    # Download Full History
-    # -------------------------------------------------
-
-    full_history_csv = history_df.to_csv(
-        index=False
-    ).encode("utf-8")
-
-    st.download_button(
-        label="📥 Download Full Prediction History",
-        data=full_history_csv,
-        file_name="full_prediction_history.csv",
-        mime="text/csv"
-    )
-
-
-    # -------------------------------------------------
-    # Clear History
-    # -------------------------------------------------
-
-    if st.button(
-        "🗑 Clear History"
-    ):
-
-        st.session_state.history = []
-
-        st.rerun()
-
-
-# =================================================
-# Batch News Prediction
-# =================================================
-
-st.divider()
-
-st.subheader(
-    "📂 Batch News Prediction"
-)
-
-st.write(
-    "Upload a CSV file containing a column named "
-    "'text' to predict multiple news articles at once."
-)
-
-
-# -------------------------------------------------
-# Upload CSV
-# -------------------------------------------------
-
-uploaded_file = st.file_uploader(
-    "Upload CSV",
-    type=["csv"],
-    key="batch_csv"
-)
-
-
-if uploaded_file is not None:
-
-    try:
-
-        # -------------------------------------------------
-        # Read CSV
-        # -------------------------------------------------
-
-        batch_df = pd.read_csv(
-            uploaded_file
-        )
-
-
-        # -------------------------------------------------
-        # Validate Column
-        # -------------------------------------------------
-
-        if "text" not in batch_df.columns:
-
-            st.error(
-                "❌ CSV must contain a 'text' column."
-            )
+        if not is_valid:
+            st.warning(message)
 
         else:
+            try:
+                processed = prepare_text(article)
+                features = vectorizer.transform([processed])
+                prediction = model.predict(features)[0]
+                probabilities = model.predict_proba(features)[0]
 
-            st.write(
-                f"📄 Articles found: "
-                f"{len(batch_df)}"
-            )
+                fake_probability = probabilities[0] * 100
+                real_probability = probabilities[1] * 100
+                confidence = max(fake_probability, real_probability)
 
+                if confidence >= 90:
+                    confidence_level = "🟢 High"
+                elif confidence >= 70:
+                    confidence_level = "🟡 Medium"
+                else:
+                    confidence_level = "🔴 Low"
 
-            # -------------------------------------------------
-            # Preview
-            # -------------------------------------------------
+                st.subheader("Prediction Result")
 
-            with st.expander(
-                "👀 Preview Uploaded Data"
-            ):
+                if prediction == 0:
+                    st.error("🚨 Prediction: FAKE NEWS")
+                else:
+                    st.success("✅ Prediction: REAL NEWS")
+
+                st.subheader("Prediction Confidence")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.metric("Fake", f"{fake_probability:.2f}%")
+                    st.progress(min(int(fake_probability), 100))
+
+                with col2:
+                    st.metric("Real", f"{real_probability:.2f}%")
+                    st.progress(min(int(real_probability), 100))
+
+                st.subheader("🎯 Confidence Level")
+
+                if confidence_level == "🟢 High":
+                    st.success(f"{confidence_level} Confidence ({confidence:.2f}%)")
+                elif confidence_level == "🟡 Medium":
+                    st.warning(f"{confidence_level} Confidence ({confidence:.2f}%)")
+                else:
+                    st.error(f"{confidence_level} Confidence ({confidence:.2f}%)")
+
+                st.info("The class with the higher probability becomes the final prediction.")
+
+                report = pd.DataFrame({
+                    "Article": [article],
+                    "Prediction": ["FAKE NEWS" if prediction == 0 else "REAL NEWS"],
+                    "Fake Probability (%)": [round(fake_probability, 2)],
+                    "Real Probability (%)": [round(real_probability, 2)],
+                    "Confidence (%)": [round(confidence, 2)]
+                })
+
+                st.download_button(
+                    "📥 Download Prediction Report",
+                    report.to_csv(index=False).encode("utf-8"),
+                    "prediction_report.csv",
+                    "text/csv",
+                    key="single_download"
+                )
+
+                st.divider()
+                st.subheader("🧠 Why did the model predict this?")
+
+                explanation = explain_prediction(processed)
+
+                lime_df = pd.DataFrame(
+                    explanation.as_list(),
+                    columns=["Word", "Importance"]
+                )
 
                 st.dataframe(
-                    batch_df.head(10),
+                    lime_df,
                     use_container_width=True,
                     hide_index=True
                 )
 
+                st.subheader("📊 Word Importance")
 
-            # -------------------------------------------------
-            # Predict Batch
-            # -------------------------------------------------
+                fig, ax = plt.subplots(figsize=(8, 4))
+                lime_df = lime_df.sort_values("Importance")
+                ax.barh(lime_df["Word"], lime_df["Importance"])
+                ax.axvline(0, linewidth=1)
+                ax.set_xlabel("Importance Score")
+                ax.set_title("Top Words Influencing Prediction")
+                st.pyplot(fig)
+                plt.close(fig)
 
-            if st.button(
-                "🚀 Predict Batch",
-                key="batch_predict"
-            ):
+                st.subheader("🔍 Important Words")
 
-                results = predict_batch(
-                    batch_df
-                )
-
-
-                # -------------------------------------------------
-                # Success Message
-                # -------------------------------------------------
-
-                st.success(
-                    f"Successfully predicted "
-                    f"{len(results)} articles."
-                )
-
-
-                # -------------------------------------------------
-                # Batch Statistics
-                # -------------------------------------------------
-
-                fake_count = (
-                    results["Prediction"]
-                    == "FAKE NEWS"
-                ).sum()
-
-                real_count = (
-                    results["Prediction"]
-                    == "REAL NEWS"
-                ).sum()
-
-                average_confidence = (
-                    results["Confidence (%)"]
-                    .mean()
-                )
-
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-
-                    st.metric(
-                        "Total Articles",
-                        len(results)
-                    )
-
-                with col2:
-
-                    st.metric(
-                        "Fake",
-                        fake_count
-                    )
-
-                with col3:
-
-                    st.metric(
-                        "Real",
-                        real_count
-                    )
-
-
-                st.metric(
-                    "Average Confidence",
-                    f"{average_confidence:.2f}%"
-                )
-
-
-                # -------------------------------------------------
-                # Batch Results
-                # -------------------------------------------------
-
-                st.subheader(
-                    "📊 Batch Results"
-                )
-
-
-                # -------------------------------------------------
-                # Batch Filters
-                # -------------------------------------------------
+                important_words = processed.split()[:15]
 
                 st.write(
-                    "### 🔎 Filter Results"
+                    ", ".join(important_words)
+                    if important_words
+                    else "No important words found."
                 )
 
+                st.session_state.history.append({
+                    "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Prediction": "FAKE NEWS" if prediction == 0 else "REAL NEWS",
+                    "Confidence (%)": round(confidence, 2),
+                    "Fake Probability (%)": round(fake_probability, 2),
+                    "Real Probability (%)": round(real_probability, 2),
+                    "Article": article[:100] + "..." if len(article) > 100 else article
+                })
 
-                filter_col1, filter_col2 = st.columns(2)
+                with st.expander("🛠 Debug Information"):
+                    st.write("**Processed Text:**")
+                    st.code(processed)
+                    st.write(f"**Feature Shape:** {features.shape}")
+                    st.write(f"**Non-zero Features:** {features.nnz}")
 
+            except Exception as e:
+                st.error("An unexpected error occurred while making the prediction.")
+                st.exception(e)
 
-                with filter_col1:
+    if st.session_state.history:
 
-                    prediction_filter = st.selectbox(
-                        "Prediction",
-                        [
-                            "All",
-                            "FAKE NEWS",
-                            "REAL NEWS"
-                        ],
-                        key="prediction_filter"
-                    )
+        st.divider()
+        st.subheader("📜 Prediction History")
 
+        history_df = pd.DataFrame(st.session_state.history)
 
-                with filter_col2:
+        total_predictions = len(history_df)
+        fake_predictions = (history_df["Prediction"] == "FAKE NEWS").sum()
+        real_predictions = (history_df["Prediction"] == "REAL NEWS").sum()
 
-                    confidence_filter = st.selectbox(
-                        "Confidence",
-                        [
-                            "All",
-                            "High (90%+)",
-                            "Medium (70% - 89%)",
-                            "Low (<70%)"
-                        ],
-                        key="confidence_filter"
-                    )
+        col1, col2, col3 = st.columns(3)
 
+        with col1:
+            st.metric("Total", total_predictions)
+        with col2:
+            st.metric("Fake", fake_predictions)
+        with col3:
+            st.metric("Real", real_predictions)
 
-                # -------------------------------------------------
-                # Search
-                # -------------------------------------------------
+        st.dataframe(
+            history_df,
+            use_container_width=True,
+            hide_index=True
+        )
 
-                search_text = st.text_input(
-                    "🔍 Search Articles",
-                    placeholder="Enter a keyword..."
-                )
+        st.download_button(
+            "📥 Download Prediction History",
+            history_df.to_csv(index=False).encode("utf-8"),
+            "prediction_history.csv",
+            "text/csv",
+            key="history_download"
+        )
 
-
-                # -------------------------------------------------
-                # Create Filtered DataFrame
-                # -------------------------------------------------
-
-                filtered_results = results.copy()
-
-
-                # -------------------------------------------------
-                # Prediction Filter
-                # -------------------------------------------------
-
-                if prediction_filter != "All":
-
-                    filtered_results = filtered_results[
-                        filtered_results["Prediction"]
-                        == prediction_filter
-                    ]
+        if st.button("🗑 Clear History", key="clear_history"):
+            st.session_state.history = []
+            st.rerun()
 
 
-                # -------------------------------------------------
-                # Confidence Filter
-                # -------------------------------------------------
+# =================================================
+# BATCH PREDICTION TAB
+# =================================================
 
-                if confidence_filter == "High (90%+)":
+with tab_batch:
 
-                    filtered_results = filtered_results[
-                        filtered_results["Confidence (%)"] >= 90
-                    ]
+    st.header("📂 Batch News Prediction")
 
+    st.write(
+        "Upload a CSV containing a column named 'text' "
+        "to predict multiple news articles."
+    )
 
-                elif confidence_filter == "Medium (70% - 89%)":
+    st.divider()
 
-                    filtered_results = filtered_results[
-                        (filtered_results["Confidence (%)"] >= 70)
-                        &
-                        (filtered_results["Confidence (%)"] < 90)
-                    ]
+    uploaded_file = st.file_uploader(
+        "Upload CSV",
+        type=["csv"],
+        key="batch_csv"
+    )
 
+    if uploaded_file is not None:
 
-                elif confidence_filter == "Low (<70%)":
+        try:
+            batch_df = pd.read_csv(uploaded_file)
 
-                    filtered_results = filtered_results[
-                        filtered_results["Confidence (%)"] < 70
-                    ]
+            if "text" not in batch_df.columns:
 
+                st.error("❌ CSV must contain a 'text' column.")
 
-                # -------------------------------------------------
-                # Search Filter
-                # -------------------------------------------------
+            else:
 
-                if search_text.strip():
+                st.write(f"📄 Articles found: {len(batch_df)}")
 
-                    filtered_results = filtered_results[
-                        filtered_results["Article"]
-                        .str.contains(
-                            search_text,
-                            case=False,
-                            na=False
-                        )
-                    ]
-
-
-                # -------------------------------------------------
-                # Filter Statistics
-                # -------------------------------------------------
-
-                st.write(
-                    f"Showing **{len(filtered_results)}** "
-                    f"of **{len(results)}** articles"
-                )
-
-
-                # -------------------------------------------------
-                # Display Filtered Results
-                # -------------------------------------------------
-
-                if filtered_results.empty:
-
-                    st.warning(
-                        "No articles match the selected filters."
-                    )
-
-                else:
-
+                with st.expander("👀 Preview Uploaded Data"):
                     st.dataframe(
-                        filtered_results,
+                        batch_df.head(10),
                         use_container_width=True,
                         hide_index=True
                     )
 
-                # -------------------------------------------------
-                # Prediction Distribution
-                # -------------------------------------------------
+                if st.button("🚀 Predict Batch", key="batch_predict"):
 
-                st.subheader(
-                    "📈 Prediction Distribution"
-                )
+                    results = predict_batch(batch_df)
 
-                prediction_counts = (
-                    results["Prediction"]
-                    .value_counts()
-                )
+                    if results.empty:
 
-                st.bar_chart(
-                    prediction_counts
-                )
-
-
-                # -------------------------------------------------
-                # Confidence Distribution
-                # -------------------------------------------------
-
-                st.subheader(
-                    "🎯 Confidence Distribution"
-                )
-
-                confidence_data = pd.DataFrame({
-
-                    "Confidence (%)":
-                        results[
-                            "Confidence (%)"
-                        ].values
-
-                })
-
-                st.bar_chart(
-                    confidence_data
-                )
-
-
-                # -------------------------------------------------
-                # Fake vs Real Percentages
-                # -------------------------------------------------
-
-                fake_percentage = (
-                    fake_count /
-                    len(results)
-                ) * 100
-
-                real_percentage = (
-                    real_count /
-                    len(results)
-                ) * 100
-
-
-                st.subheader(
-                    "📊 Batch Prediction Percentages"
-                )
-
-
-                col1, col2 = st.columns(2)
-
-
-                with col1:
-
-                    st.metric(
-                        "Fake %",
-                        f"{fake_percentage:.2f}%"
-                    )
-
-                    st.progress(
-                        min(
-                            int(fake_percentage),
-                            100
+                        st.warning(
+                            "No valid articles were found in the uploaded CSV."
                         )
-                    )
 
+                    else:
 
-                with col2:
-
-                    st.metric(
-                        "Real %",
-                        f"{real_percentage:.2f}%"
-                    )
-
-                    st.progress(
-                        min(
-                            int(real_percentage),
-                            100
+                        st.success(
+                            f"Successfully predicted {len(results)} articles."
                         )
-                    )
 
+                        st.subheader("📊 Batch Analytics Dashboard")
 
-                # -------------------------------------------------
-                # Download Batch Results
-                # -------------------------------------------------
+                        fake_count = (
+                            results["Prediction"] == "FAKE NEWS"
+                        ).sum()
 
-                batch_csv = filtered_results.to_csv(
-                    index=False
-                ).encode("utf-8")
+                        real_count = (
+                            results["Prediction"] == "REAL NEWS"
+                        ).sum()
 
+                        total_count = len(results)
 
-                st.download_button(
-                    label="📥 Download Batch Results",
-                    data=batch_csv,
-                    file_name="batch_predictions.csv",
-                    mime="text/csv",
-                    key="download_batch_results"
-                )
+                        average_confidence = (
+                            results["Confidence (%)"].mean()
+                        )
 
+                        fake_percentage = (
+                            fake_count / total_count * 100
+                        )
 
-    except Exception as e:
+                        real_percentage = (
+                            real_count / total_count * 100
+                        )
 
-        st.error(
-            "An error occurred while processing "
-            "the CSV file."
-        )
+                        col1, col2, col3, col4 = st.columns(4)
 
-        st.exception(e)
+                        with col1:
+                            st.metric("Total Articles", total_count)
+
+                        with col2:
+                            st.metric(
+                                "Fake News",
+                                fake_count,
+                                f"{fake_percentage:.1f}%"
+                            )
+
+                        with col3:
+                            st.metric(
+                                "Real News",
+                                real_count,
+                                f"{real_percentage:.1f}%"
+                            )
+
+                        with col4:
+                            st.metric(
+                                "Avg Confidence",
+                                f"{average_confidence:.1f}%"
+                            )
+
+                        st.subheader("📈 Prediction Distribution")
+
+                        prediction_chart = pd.DataFrame(
+                            {"Articles": [fake_count, real_count]},
+                            index=["FAKE NEWS", "REAL NEWS"]
+                        )
+
+                        st.bar_chart(prediction_chart)
+
+                        st.subheader("🎯 Confidence Distribution")
+
+                        confidence_chart = pd.DataFrame({
+                            "Confidence (%)":
+                                results["Confidence (%)"].values
+                        })
+
+                        st.line_chart(confidence_chart)
+
+                        high_confidence = (
+                            results["Confidence (%)"] >= 90
+                        ).sum()
+
+                        medium_confidence = (
+                            (results["Confidence (%)"] >= 70)
+                            &
+                            (results["Confidence (%)"] < 90)
+                        ).sum()
+
+                        low_confidence = (
+                            results["Confidence (%)"] < 70
+                        ).sum()
+
+                        st.subheader("🎯 Confidence Categories")
+
+                        confidence_categories = pd.DataFrame(
+                            {"Articles": [
+                                high_confidence,
+                                medium_confidence,
+                                low_confidence
+                            ]},
+                            index=[
+                                "High (90%+)",
+                                "Medium (70-89%)",
+                                "Low (<70%)"
+                            ]
+                        )
+
+                        st.bar_chart(confidence_categories)
+
+                        if low_confidence > 0:
+                            st.warning(
+                                f"{low_confidence} article(s) have low prediction "
+                                "confidence. Review them carefully."
+                            )
+                        else:
+                            st.success(
+                                "All predictions have at least 70% confidence."
+                            )
+
+                        st.divider()
+                        st.subheader("🔎 Filter Batch Results")
+
+                        filter_col1, filter_col2 = st.columns(2)
+
+                        with filter_col1:
+                            prediction_filter = st.selectbox(
+                                "Prediction",
+                                ["All", "FAKE NEWS", "REAL NEWS"],
+                                key="prediction_filter"
+                            )
+
+                        with filter_col2:
+                            confidence_filter = st.selectbox(
+                                "Confidence",
+                                [
+                                    "All",
+                                    "High (90%+)",
+                                    "Medium (70% - 89%)",
+                                    "Low (<70%)"
+                                ],
+                                key="confidence_filter"
+                            )
+
+                        search_text = st.text_input(
+                            "🔍 Search Articles",
+                            placeholder="Enter a keyword...",
+                            key="batch_search"
+                        )
+
+                        filtered_results = results.copy()
+
+                        if prediction_filter != "All":
+                            filtered_results = filtered_results[
+                                filtered_results["Prediction"] == prediction_filter
+                            ]
+
+                        if confidence_filter == "High (90%+)":
+                            filtered_results = filtered_results[
+                                filtered_results["Confidence (%)"] >= 90
+                            ]
+
+                        elif confidence_filter == "Medium (70% - 89%)":
+                            filtered_results = filtered_results[
+                                (filtered_results["Confidence (%)"] >= 70)
+                                &
+                                (filtered_results["Confidence (%)"] < 90)
+                            ]
+
+                        elif confidence_filter == "Low (<70%)":
+                            filtered_results = filtered_results[
+                                filtered_results["Confidence (%)"] < 70
+                            ]
+
+                        if search_text.strip():
+                            filtered_results = filtered_results[
+                                filtered_results["Article"].str.contains(
+                                    search_text,
+                                    case=False,
+                                    na=False
+                                )
+                            ]
+
+                        st.write(
+                            f"Showing **{len(filtered_results)}** "
+                            f"of **{len(results)}** articles"
+                        )
+
+                        if filtered_results.empty:
+                            st.warning(
+                                "No articles match the selected filters."
+                            )
+                        else:
+                            st.dataframe(
+                                filtered_results,
+                                use_container_width=True,
+                                hide_index=True
+                            )
+
+                        st.download_button(
+                            "📥 Download Filtered Batch Results",
+                            filtered_results.to_csv(index=False).encode("utf-8"),
+                            "batch_predictions.csv",
+                            "text/csv",
+                            key="download_batch_results"
+                        )
+
+        except Exception as e:
+
+            st.error(
+                "An error occurred while processing the CSV file."
+            )
+
+            st.exception(e)

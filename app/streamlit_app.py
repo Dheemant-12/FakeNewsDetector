@@ -150,6 +150,83 @@ with tab_dashboard:
 
     st.divider()
     st.subheader("📈 Model Performance")
+    # =================================================
+    # Classification Summary
+    # =================================================
+
+    st.divider()
+
+    st.subheader(
+        "📋 Classification Summary"
+    )
+
+    if metrics is not None:
+
+        summary_data = {
+            "Metric": [
+                "Accuracy",
+                "Precision",
+                "Recall",
+                "F1 Score",
+                "AUC"
+            ],
+            "Score": [
+                metrics["accuracy"],
+                metrics["precision"],
+                metrics["recall"],
+                metrics["f1_score"],
+                metrics["auc"]
+            ]
+        }
+
+        summary_df = pd.DataFrame(
+            summary_data
+        )
+
+        summary_df["Score"] = summary_df[
+            "Score"
+        ].round(4)
+
+        st.dataframe(
+            summary_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+    else:
+
+        st.warning(
+            "Classification metrics are not available."
+        )
+    # =================================================
+    # Performance Interpretation
+    # =================================================
+
+    if metrics is not None:
+
+        accuracy = metrics["accuracy"]
+
+        if accuracy >= 0.95:
+
+            st.success(
+                f"🟢 Excellent model performance: "
+                f"{accuracy * 100:.2f}% accuracy."
+            )
+
+        elif accuracy >= 0.85:
+
+            st.info(
+                f"🟡 Good model performance: "
+                f"{accuracy * 100:.2f}% accuracy."
+            )
+
+        else:
+
+            st.warning(
+                f"🔴 The model achieved "
+                f"{accuracy * 100:.2f}% accuracy. "
+                "Further model improvement may be required."
+            )
 
     if metrics is not None:
         col1, col2, col3 = st.columns(3)

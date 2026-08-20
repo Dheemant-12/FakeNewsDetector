@@ -1,0 +1,29 @@
+{
+    "best_model": "Linear SVM",
+    "models": [
+        {
+            "Model": "Logistic Regression",
+            "Accuracy": 0.9885,
+            "Precision": 0.9845,
+            "Recall": 0.9916,
+            "F1 Score": 0.988,
+            "AUC": 0.9991
+        },
+        {
+            "Model": "Naive Bayes",
+            "Accuracy": 0.9439,
+            "Precision": 0.9381,
+            "Recall": 0.9447,
+            "F1 Score": 0.9414,
+            "AUC": 0.9841
+        },
+        {
+            "Model": "Linear SVM",
+            "Accuracy": 0.9944,
+            "Precision": 0.9942,
+            "Recall": 0.9942,
+            "F1 Score": 0.9942,
+            "AUC": 0.9998
+        }
+    ]
+}

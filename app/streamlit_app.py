@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+import json
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
@@ -49,12 +50,38 @@ model, vectorizer = load_models()
 @st.cache_data
 def get_model_metrics():
     return load_metrics()
+# =================================================
+# Model Comparison Loader
+# =================================================
 
+@st.cache_data
+def load_model_comparison():
+
+    comparison_path = os.path.join(
+        PROJECT_ROOT,
+        "results",
+        "model_comparison.json"
+    )
+
+    if not os.path.exists(comparison_path):
+        return None
+
+    with open(
+        comparison_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        return json.load(file)
 
 try:
     metrics = get_model_metrics()
 except Exception:
     metrics = None
+try:
+    model_comparison = load_model_comparison()
+except Exception:
+    model_comparison = None
 
 
 if "history" not in st.session_state:
@@ -284,6 +311,115 @@ with tab_dashboard:
                 st.info("ROC curve data is empty.")
         else:
             st.info("ROC curve data is not available.")
+# =================================================
+# MODEL COMPARISON
+# =================================================
+
+st.divider()
+
+st.subheader(
+    "🤖 Model Comparison"
+)
+
+if model_comparison is not None:
+
+    comparison_models = model_comparison.get(
+        "models",
+        []
+    )
+
+    best_model_name = model_comparison.get(
+        "best_model",
+        "Unknown"
+    )
+
+    if comparison_models:
+
+        comparison_df = pd.DataFrame(
+            comparison_models
+        )
+
+        # -----------------------------------------
+        # Best Model
+        # -----------------------------------------
+
+        st.success(
+            f"🏆 Best Model: {best_model_name}"
+        )
+
+        # -----------------------------------------
+        # Comparison Table
+        # -----------------------------------------
+
+        st.dataframe(
+            comparison_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # -----------------------------------------
+        # Accuracy Comparison
+        # -----------------------------------------
+
+        st.subheader(
+            "📊 Accuracy Comparison"
+        )
+
+        accuracy_chart = comparison_df[
+            ["Model", "Accuracy"]
+        ].copy()
+
+        accuracy_chart = accuracy_chart.set_index(
+            "Model"
+        )
+
+        accuracy_chart["Accuracy"] = (
+            accuracy_chart["Accuracy"] * 100
+        )
+
+        st.bar_chart(
+            accuracy_chart
+        )
+
+        # -----------------------------------------
+        # F1 Comparison
+        # -----------------------------------------
+
+        st.subheader(
+            "📈 F1 Score Comparison"
+        )
+
+        f1_chart = comparison_df[
+            ["Model", "F1 Score"]
+        ].copy()
+
+        f1_chart = f1_chart.set_index(
+            "Model"
+        )
+
+        f1_chart["F1 Score"] = (
+            f1_chart["F1 Score"] * 100
+        )
+
+        st.bar_chart(
+            f1_chart
+        )
+
+    else:
+
+        st.info(
+            "No model comparison results found."
+        )
+
+else:
+
+    st.warning(
+        "Model comparison results are not available."
+    )
+
+    st.info(
+        "Run models/compare_models.py first."
+    )
 
 
 # =================================================

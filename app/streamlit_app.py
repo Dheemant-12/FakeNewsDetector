@@ -347,6 +347,12 @@ if model_comparison is not None:
             f"🏆 Best Model: {best_model_name}"
         )
 
+        st.write(
+            "The models below were trained using the "
+            "same TF-IDF features and evaluated on "
+            "the same test dataset."
+        )
+
         # -----------------------------------------
         # Comparison Table
         # -----------------------------------------
@@ -386,7 +392,7 @@ if model_comparison is not None:
         # -----------------------------------------
 
         st.subheader(
-            "📈 F1 Score Comparison"
+            "🎯 F1 Score Comparison"
         )
 
         f1_chart = comparison_df[
@@ -403,6 +409,94 @@ if model_comparison is not None:
 
         st.bar_chart(
             f1_chart
+        )
+
+        # -----------------------------------------
+        # Overall Comparison
+        # -----------------------------------------
+
+        st.subheader(
+            "📈 Overall Model Performance"
+        )
+
+        performance_chart = comparison_df[
+            [
+                "Model",
+                "Accuracy",
+                "Precision",
+                "Recall",
+                "F1 Score"
+            ]
+        ].copy()
+
+        performance_chart = performance_chart.set_index(
+            "Model"
+        )
+
+        performance_chart = (
+            performance_chart * 100
+        )
+
+        st.bar_chart(
+            performance_chart
+        )
+
+        # -----------------------------------------
+        # Model Selection Explanation
+        # -----------------------------------------
+
+        st.subheader(
+            "💡 Model Selection"
+        )
+
+        best_row = comparison_df[
+            comparison_df["Model"]
+            == best_model_name
+        ]
+
+        if not best_row.empty:
+
+            best_f1 = best_row[
+                "F1 Score"
+            ].iloc[0]
+
+            best_accuracy = best_row[
+                "Accuracy"
+            ].iloc[0]
+
+            best_auc = best_row[
+                "AUC"
+            ].iloc[0]
+
+            st.info(
+                f"""
+**{best_model_name}** achieved the highest
+overall F1 Score in the model comparison.
+
+- Accuracy: **{best_accuracy * 100:.2f}%**
+- F1 Score: **{best_f1 * 100:.2f}%**
+- AUC: **{best_auc:.4f}**
+
+F1 Score is useful here because it balances
+precision and recall when evaluating the
+classification performance.
+"""
+            )
+
+        # -----------------------------------------
+        # Download Comparison Results
+        # -----------------------------------------
+
+        comparison_csv = comparison_df.to_csv(
+            index=False
+        ).encode("utf-8")
+
+        st.download_button(
+            label="📥 Download Model Comparison",
+            data=comparison_csv,
+            file_name="model_comparison.csv",
+            mime="text/csv",
+            key="download_model_comparison"
         )
 
     else:

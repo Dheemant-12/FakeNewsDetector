@@ -559,12 +559,97 @@ with tab_single:
 
                 st.subheader("Prediction Result")
 
-                if prediction == 0:
-                    st.error("🚨 Prediction: FAKE NEWS")
-                else:
-                    st.success("✅ Prediction: REAL NEWS")
+                # =================================================
+                # Prediction Result Card
+                # =================================================
+
+                st.subheader(
+                    "🎯 Prediction Result"
+                )
+
+                result_col1, result_col2 = st.columns(
+                    [2, 1]
+                )
+
+                with result_col1:
+
+                    if prediction == 0:
+
+                        st.error(
+                            "🚨 FAKE NEWS",
+                            icon="🚨"
+                        )
+
+                        st.write(
+                            "The model classified this article "
+                            "as likely fake."
+                        )
+
+                    else:
+
+                        st.success(
+                            "✅ REAL NEWS",
+                            icon="✅"
+                        )
+
+                        st.write(
+                            "The model classified this article "
+                            "as likely real."
+                        )
+
+
+                with result_col2:
+
+                    st.metric(
+                        "Confidence",
+                        f"{confidence:.2f}%"
+                    )
 
                 st.subheader("Prediction Confidence")
+                # =================================================
+                # Probability Breakdown
+                # =================================================
+
+                st.subheader(
+                    "📊 Probability Breakdown"
+                )
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+
+                    st.metric(
+                        "🚨 Fake Probability",
+                        f"{fake_probability:.2f}%"
+                    )
+
+                    st.progress(
+                        min(
+                            int(fake_probability),
+                            100
+                        )
+                    )
+
+
+                with col2:
+
+                    st.metric(
+                        "✅ Real Probability",
+                        f"{real_probability:.2f}%"
+                    )
+
+                    st.progress(
+                        min(
+                            int(real_probability),
+                            100
+                        )
+                    )
+
+
+                st.caption(
+                    "These percentages represent the model's estimated "
+                    "probability for each class."
+                )
 
                 col1, col2 = st.columns(2)
 
@@ -577,6 +662,55 @@ with tab_single:
                     st.progress(min(int(real_probability), 100))
 
                 st.subheader("🎯 Confidence Level")
+                # =================================================
+                # Confidence Interpretation
+                # =================================================
+
+                st.subheader(
+                    "🎯 Confidence Interpretation"
+                )
+
+                if confidence >= 90:
+
+                    st.success(
+                        f"🟢 High Confidence — "
+                        f"{confidence:.2f}%"
+                    )
+
+                    confidence_message = (
+                        "The model is highly confident in this prediction."
+                    )
+
+
+                elif confidence >= 70:
+
+                    st.warning(
+                        f"🟡 Medium Confidence — "
+                        f"{confidence:.2f}%"
+                    )
+
+                    confidence_message = (
+                        "The model has reasonable confidence, "
+                        "but the prediction should still be reviewed."
+                    )
+
+
+                else:
+
+                    st.error(
+                        f"🔴 Low Confidence — "
+                        f"{confidence:.2f}%"
+                    )
+
+                    confidence_message = (
+                        "The model is uncertain about this article. "
+                        "Do not rely on this prediction alone."
+                    )
+
+
+                st.info(
+                    confidence_message
+                )
 
                 if confidence_level == "🟢 High":
                     st.success(f"{confidence_level} Confidence ({confidence:.2f}%)")
@@ -696,7 +830,29 @@ with tab_single:
         if st.button("🗑 Clear History", key="clear_history"):
             st.session_state.history = []
             st.rerun()
+# =================================================
+# Model Disclaimer
+# =================================================
 
+with st.expander(
+    "ℹ️ Important: How should this prediction be used?"
+):
+
+    st.write(
+        "This system provides a machine-learning-based "
+        "prediction and should not be treated as a definitive "
+        "fact-checking system."
+    )
+
+    st.write(
+        "A high-confidence prediction does not guarantee "
+        "that an article is actually fake or real."
+    )
+
+    st.write(
+        "For important claims, verify the information using "
+        "reliable sources and independent fact-checking."
+    )
 
 # =================================================
 # BATCH PREDICTION TAB
